@@ -107,7 +107,7 @@ export default function DashboardPage() {
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-2">Total Balance</h3>
           <p className={`text-3xl font-bold ${data.totalBalance >= 0 ? 'text-green-600 dark:text-green-500' : 'text-destructive'}`}>
-            ${Math.abs(data.totalBalance).toFixed(2)}
+            ₹{Math.abs(data.totalBalance).toFixed(2)}
           </p>
           {data.totalBalance !== 0 && (
             <p className="text-sm text-muted-foreground mt-1">
@@ -118,7 +118,7 @@ export default function DashboardPage() {
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-2">You Owe</h3>
           <p className="text-3xl font-bold text-destructive">
-            ${data.youOwe.toFixed(2)}
+            ₹{data.youOwe.toFixed(2)}
           </p>
           {data.youOwe > 0 && (
             <p className="text-sm text-muted-foreground mt-1">
@@ -129,7 +129,7 @@ export default function DashboardPage() {
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-2">You are Owed</h3>
           <p className="text-3xl font-bold text-green-600 dark:text-green-500">
-            ${data.youAreOwed.toFixed(2)}
+            ₹{data.youAreOwed.toFixed(2)}
           </p>
           {data.youAreOwed > 0 && (
             <p className="text-sm text-muted-foreground mt-1">

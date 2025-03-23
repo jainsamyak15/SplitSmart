@@ -152,7 +152,7 @@ export function GroupCard({ group }: GroupCardProps) {
           </div>
           <div className="text-right">
             <p className="text-sm text-muted-foreground">Total Expenses</p>
-            <p className="text-xl font-bold">${totalExpenses.toFixed(2)}</p>
+            <p className="text-xl font-bold">₹{totalExpenses.toFixed(2)}</p>
           </div>
         </div>
       </Card>

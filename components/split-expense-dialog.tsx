@@ -120,8 +120,8 @@ export function SplitExpenseDialog({
             ))}
           </div>
           <div className="flex justify-between text-sm">
-            <span>Total Amount: ${amount.toFixed(2)}</span>
-            <span>Split Amount: ${totalSplit.toFixed(2)}</span>
+            <span>Total Amount: ₹{amount.toFixed(2)}</span>
+            <span>Split Amount: ₹{totalSplit.toFixed(2)}</span>
           </div>
           <Button
             className="w-full"

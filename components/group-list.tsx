@@ -132,7 +132,7 @@ export function GroupList() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-medium">${totalExpenses.toFixed(2)}</p>
+                    <p className="font-medium">₹{totalExpenses.toFixed(2)}</p>
                     <p className="text-sm text-muted-foreground hidden sm:block">Total expenses</p>
                   </div>
                 </div>

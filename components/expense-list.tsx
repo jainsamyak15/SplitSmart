@@ -130,7 +130,7 @@ export function ExpenseList({ groupId }: ExpenseListProps) {
                   </Badge>
                 </div>
                 <p className="font-semibold text-lg">
-                  ${expense.amount.toFixed(2)}
+                  ₹{expense.amount.toFixed(2)}
                 </p>
               </div>
 
@@ -162,7 +162,7 @@ export function ExpenseList({ groupId }: ExpenseListProps) {
                         key={split.debtor.id}
                         className="text-xs px-2 py-1 bg-muted rounded-full"
                       >
-                        {split.debtor.name || split.debtor.phone}: ${split.amount.toFixed(2)}
+                        {split.debtor.name || split.debtor.phone}: ₹{split.amount.toFixed(2)}
                       </div>
                     ))}
                   </div>
@@ -224,7 +224,7 @@ export function ExpenseList({ groupId }: ExpenseListProps) {
                 {format(new Date(expense.date), 'MMM d, yyyy')}
               </TableCell>
               <TableCell className="text-right font-medium">
-                ${expense.amount.toFixed(2)}
+                ₹{expense.amount.toFixed(2)}
               </TableCell>
             </motion.tr>
           ))}

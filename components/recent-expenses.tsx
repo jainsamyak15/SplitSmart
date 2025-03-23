@@ -109,7 +109,7 @@ export function RecentExpenses() {
                     </p>
                   </div>
                 </div>
-                <p className="font-semibold">${expense.amount.toFixed(2)}</p>
+                <p className="font-semibold">₹{expense.amount.toFixed(2)}</p>
               </div>
               <div className="flex justify-between text-sm text-muted-foreground">
                 <span>{expense.category}</span>
@@ -158,7 +158,7 @@ export function RecentExpenses() {
               </TableCell>
               <TableCell>{expense.category}</TableCell>
               <TableCell className="text-right">
-                ${expense.amount.toFixed(2)}
+                ₹{expense.amount.toFixed(2)}
               </TableCell>
             </motion.tr>
           ))}

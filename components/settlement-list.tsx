@@ -103,7 +103,7 @@ export function SettlementList() {
                   </div>
                 </div>
                 <p className="font-semibold text-green-600">
-                  ${settlement.amount.toFixed(2)}
+                    ₹{settlement.amount.toFixed(2)}
                 </p>
               </div>
               <div className="flex justify-between text-sm text-muted-foreground">
@@ -162,7 +162,7 @@ export function SettlementList() {
                 {format(new Date(settlement.date), 'MMM d, yyyy')}
               </TableCell>
               <TableCell className="text-right">
-                ${settlement.amount.toFixed(2)}
+                ₹{settlement.amount.toFixed(2)}
               </TableCell>
             </motion.tr>
           ))}

@@ -136,7 +136,7 @@ export function ReceiptGenerator() {
       const shareData = {
         title: "Expense Receipt",
         text: `Daily Expense Summary (${receipt.date})\n` +
-          `Total Expenses: $${receipt.totalExpenses.toFixed(2)}\n` +
+          `Total Expenses: ₹${receipt.totalExpenses.toFixed(2)}\n` +
           `Pending Payments: ${receipt.pendingPayments.length}\n` +
           `Receivable Payments: ${receipt.receivablePayments.length}`,
       };
@@ -209,7 +209,7 @@ export function ReceiptGenerator() {
                           {expense.group}
                         </p>
                       </div>
-                      <p className="font-semibold">${expense.amount.toFixed(2)}</p>
+                      <p className="font-semibold">₹{expense.amount.toFixed(2)}</p>
                     </div>
                   ))}
                 </div>
@@ -234,7 +234,7 @@ export function ReceiptGenerator() {
                         </p>
                       </div>
                       <p className="font-semibold text-destructive">
-                        ${payment.amount.toFixed(2)}
+                        ₹{payment.amount.toFixed(2)}
                       </p>
                     </div>
                   ))}
@@ -260,7 +260,7 @@ export function ReceiptGenerator() {
                         </p>
                       </div>
                       <p className="font-semibold text-green-600">
-                        ${payment.amount.toFixed(2)}
+                        ₹{payment.amount.toFixed(2)}
                       </p>
                     </div>
                   ))}
@@ -274,7 +274,7 @@ export function ReceiptGenerator() {
               <div className="flex justify-between items-center">
                 <p className="text-lg font-semibold">Total Expenses</p>
                 <p className="text-xl font-bold">
-                  ${receipt.totalExpenses.toFixed(2)}
+                    ₹{receipt.totalExpenses.toFixed(2)}
                 </p>
               </div>
             </div>
