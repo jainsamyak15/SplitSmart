@@ -33,7 +33,7 @@ export default function Home() {
         if (data.otp) {
           setMockOtp(data.otp);
           setShowSmsNotification(true);
-          setTimeout(() => setShowSmsNotification(false), 5000);
+          setTimeout(() => setShowSmsNotification(false), 10000);
         }
         toast.success("OTP sent to your phone number!");
       } else {
