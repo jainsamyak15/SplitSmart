@@ -18,6 +18,7 @@ import { GroupCard } from "@/components/group-card";
 import { toast } from "sonner";
 
 export default function GroupsPage() {
+  const [loading1, setLoading1] = useState<boolean>(false)
   const [groups, setGroups] = useState<{ id: string; name: string; description: string; members: any[]; expenses: any[] }[]>([]);
   const [newGroup, setNewGroup] = useState({ name: "", description: "" });
   const [isOpen, setIsOpen] = useState(false);
@@ -45,6 +46,7 @@ export default function GroupsPage() {
 
   const handleCreateGroup = async () => {
     try {
+      setLoading1(true)
       const user = JSON.parse(localStorage.getItem("user") || "{}");
       if (!user.id) {
         toast.error("Please log in to create a group");
@@ -66,6 +68,7 @@ export default function GroupsPage() {
         setIsOpen(false);
         setNewGroup({ name: "", description: "" });
         fetchGroups(); // Refresh the groups list
+        setLoading1(false)
       } else {
         const data = await response.json();
         toast.error(data.error || "Failed to create group");
@@ -119,9 +122,9 @@ export default function GroupsPage() {
               <Button
                 className="w-full"
                 onClick={handleCreateGroup}
-                disabled={!newGroup.name}
+                disabled={!newGroup.name || loading1}
               >
-                Create Group
+                {loading1 ? "Creating..." : "Create New Group"}
               </Button>
             </div>
           </DialogContent>

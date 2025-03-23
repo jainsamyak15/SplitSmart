@@ -48,7 +48,8 @@ export async function GET(
         group: true,
         splits: {
           include: {
-            debtor: {
+            // @ts-ignore
+            debtor: { 
               select: {
                 id: true,
                 name: true,

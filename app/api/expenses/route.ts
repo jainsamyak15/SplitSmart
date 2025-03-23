@@ -109,6 +109,7 @@ export async function GET(req: Request) {
         group: true,
         splits: {
           include: {
+            // @ts-ignore
             debtor: true,
             creditor: true
           }

@@ -33,7 +33,15 @@ interface Receipt {
 export function ReceiptGenerator() {
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const receiptRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     fetchReceiptData();
@@ -111,17 +119,32 @@ export function ReceiptGenerator() {
     if (!receiptRef.current) return;
 
     try {
-      const canvas = await html2canvas(receiptRef.current);
+      const scale = window.devicePixelRatio;
+      const canvas = await html2canvas(receiptRef.current, {
+        scale: scale,
+        useCORS: true,
+        logging: false,
+        windowWidth: receiptRef.current.scrollWidth * scale,
+        windowHeight: receiptRef.current.scrollHeight * scale
+      });
+
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "px",
-        format: [canvas.width, canvas.height],
+        format: [canvas.width / scale, canvas.height / scale]
       });
 
-      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
-      pdf.save(`expense-receipt-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+      pdf.addImage(
+        imgData, 
+        "PNG", 
+        0, 
+        0, 
+        canvas.width / scale, 
+        canvas.height / scale
+      );
       
+      pdf.save(`expense-receipt-${format(new Date(), "yyyy-MM-dd")}.pdf`);
       toast.success("Receipt downloaded successfully!");
     } catch (error) {
       console.error("Failed to download receipt:", error);
@@ -193,14 +216,14 @@ export function ReceiptGenerator() {
         </div>
       </div>
 
-      <div ref={receiptRef} className="space-y-4 sm:space-y-6 p-4 sm:p-6 bg-background">
+      <div ref={receiptRef} className="bg-background p-4 sm:p-6 rounded-lg border">
         <Card className="p-4 sm:p-6">
           <div className="text-center mb-4 sm:mb-6">
             <h3 className="text-xl sm:text-2xl font-bold">Expense Receipt</h3>
             <p className="text-sm sm:text-base text-muted-foreground">{receipt.date}</p>
           </div>
 
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-6">
             <div>
               <h4 className="text-base sm:text-lg font-semibold mb-2">Your Expenses</h4>
               {receipt.paidExpenses.length > 0 ? (
