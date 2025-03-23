@@ -50,17 +50,18 @@ export async function POST(req: Request) {
     // Generate a 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     
-    // Store OTP (in production, use Redis or a database with expiration)
+    // Store OTP (in production, use Redis or a database)
     otpStore.set(phone, otp);
     
-    // In production, integrate with SMS provider to send the OTP
-    console.log(`OTP for ${phone}: ${otp}`); // For development only
+    // Always log the OTP for debugging
+    console.log(`OTP for ${phone}: ${otp}`);
 
-    // Return the OTP in development mode only
-    if (process.env.NODE_ENV === 'development') {
+    // In development, return the OTP in the response
+    if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_SHOW_OTP === 'true') {
       return NextResponse.json({ success: true, otp });
     }
 
+    // In production, only return success status
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("OTP generation error:", error);
