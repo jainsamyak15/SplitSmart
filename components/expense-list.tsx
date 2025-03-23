@@ -72,11 +72,20 @@ export function ExpenseList({ groupId }: ExpenseListProps) {
 
   const fetchExpenses = async () => {
     try {
+      const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
       const url = groupId ? `/api/groups/${groupId}/expenses` : "/api/expenses";
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          'x-user-id': currentUser.id
+        }
+      });
+      
       if (response.ok) {
         const data = await response.json();
         setExpenses(data);
+      } else {
+        const error = await response.json();
+        console.error("Failed to fetch expenses:", error);
       }
     } catch (error) {
       console.error("Failed to fetch expenses:", error);

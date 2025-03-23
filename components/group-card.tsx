@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 
 interface GroupMember {
   id: string;
+  role: "ADMIN" | "MEMBER";
   user: {
     id: string;
     name: string | null;
@@ -44,6 +45,14 @@ export function GroupCard({ group }: GroupCardProps) {
   const router = useRouter();
   const totalExpenses = group.expenses.reduce((sum, expense) => sum + expense.amount, 0);
 
+  // Get current user from localStorage
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  
+  // Check if current user is an admin
+  const isAdmin = group.members.some(member => 
+    member.user.id === currentUser.id && member.role === "ADMIN"
+  );
+
   const handleDeleteGroup = async () => {
     if (!confirm("Are you sure you want to delete this group?")) {
       return;
@@ -52,13 +61,17 @@ export function GroupCard({ group }: GroupCardProps) {
     try {
       const response = await fetch(`/api/groups/${group.id}`, {
         method: "DELETE",
+        headers: {
+          'x-user-id': currentUser.id
+        }
       });
 
       if (response.ok) {
         toast.success("Group deleted successfully!");
         router.refresh();
       } else {
-        toast.error("Failed to delete group");
+        const data = await response.json();
+        toast.error(data.error || "Failed to delete group");
       }
     } catch (error) {
       console.error("Failed to delete group:", error);
@@ -81,29 +94,33 @@ export function GroupCard({ group }: GroupCardProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setShowManageMembers(true)}>
-                <Users className="w-4 h-4 mr-2" />
-                Manage Members
-              </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href={`/dashboard/groups/${group.id}/expenses`}>
                   <Receipt className="w-4 h-4 mr-2" />
                   View Expenses
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href={`/dashboard/groups/${group.id}/settings`}>
-                  <Settings className="w-4 h-4 mr-2" />
-                  Settings
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={handleDeleteGroup}
-              >
-                <Trash className="w-4 h-4 mr-2" />
-                Delete Group
-              </DropdownMenuItem>
+              {isAdmin && (
+                <>
+                  <DropdownMenuItem onClick={() => setShowManageMembers(true)}>
+                    <Users className="w-4 h-4 mr-2" />
+                    Manage Members
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href={`/dashboard/groups/${group.id}/settings`}>
+                      <Settings className="w-4 h-4 mr-2" />
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive"
+                    onClick={handleDeleteGroup}
+                  >
+                    <Trash className="w-4 h-4 mr-2" />
+                    Delete Group
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -123,13 +140,15 @@ export function GroupCard({ group }: GroupCardProps) {
                 </AvatarFallback>
               </Avatar>
             ))}
-            <motion.div
-              whileHover={{ scale: 1.1 }}
-              className="h-10 w-10 rounded-full bg-primary/10 border-2 border-background flex items-center justify-center cursor-pointer"
-              onClick={() => setShowManageMembers(true)}
-            >
-              <Plus className="w-4 h-4" />
-            </motion.div>
+            {isAdmin && (
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                className="h-10 w-10 rounded-full bg-primary/10 border-2 border-background flex items-center justify-center cursor-pointer"
+                onClick={() => setShowManageMembers(true)}
+              >
+                <Plus className="w-4 h-4" />
+              </motion.div>
+            )}
           </div>
           <div className="text-right">
             <p className="text-sm text-muted-foreground">Total Expenses</p>
@@ -138,12 +157,14 @@ export function GroupCard({ group }: GroupCardProps) {
         </div>
       </Card>
 
-      <ManageMembersDialog
-        groupId={group.id}
-        open={showManageMembers}
-        onOpenChange={setShowManageMembers}
-        currentMembers={group.members}
-      />
+      {isAdmin && (
+        <ManageMembersDialog
+          groupId={group.id}
+          open={showManageMembers}
+          onOpenChange={setShowManageMembers}
+          currentMembers={group.members}
+        />
+      )}
     </>
   );
 }

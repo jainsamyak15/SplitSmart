@@ -42,7 +42,18 @@ export function RecentExpenses() {
   useEffect(() => {
     async function fetchExpenses() {
       try {
-        const response = await fetch("/api/expenses");
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        if (!user.id) {
+          setIsLoading(false);
+          return;
+        }
+
+        const response = await fetch("/api/expenses", {
+          headers: {
+            'x-user-id': user.id
+          }
+        });
+        
         if (response.ok) {
           const data = await response.json();
           const recentExpenses = data

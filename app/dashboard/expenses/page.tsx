@@ -34,6 +34,11 @@ const categories = [
   { value: "OTHER", label: "Other" },
 ];
 
+interface Group {
+  id: string;
+  name: string;
+}
+
 export default function ExpensesPage() {
   const [isOpen, setIsOpen] = useState(false);
   const [newExpense, setNewExpense] = useState({
@@ -41,8 +46,9 @@ export default function ExpensesPage() {
     amount: "",
     category: "",
   });
-  const [groups, setGroups] = useState<{ id: string; name: string }[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroup, setSelectedGroup] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     fetchGroups();
@@ -50,23 +56,43 @@ export default function ExpensesPage() {
 
   const fetchGroups = async () => {
     try {
-      const response = await fetch("/api/groups");
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      if (!user.id) return;
+
+      const response = await fetch("/api/groups", {
+        headers: {
+          'x-user-id': user.id
+        }
+      });
+      
       if (response.ok) {
         const data = await response.json();
-        setGroups(data);
+        // Only show groups where the user is a member
+        const userGroups = data.filter((group: any) => 
+          group.members.some((member: any) => member.user.id === user.id)
+        );
+        setGroups(userGroups);
+      } else {
+        const error = await response.json();
+        toast.error(error.message || "Failed to fetch groups");
       }
     } catch (error) {
       console.error("Failed to fetch groups:", error);
+      toast.error("Failed to fetch groups");
     }
   };
 
   const handleCreateExpense = async () => {
     try {
+      setIsLoading(true);
       const user = JSON.parse(localStorage.getItem("user") || "{}");
       
       const response = await fetch("/api/expenses", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          'x-user-id': user.id
+        },
         body: JSON.stringify({
           amount: parseFloat(newExpense.amount),
           description: newExpense.description,
@@ -89,6 +115,8 @@ export default function ExpensesPage() {
     } catch (error) {
       console.error("Failed to create expense:", error);
       toast.error("Failed to add expense");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -120,6 +148,7 @@ export default function ExpensesPage() {
                   onChange={(e) =>
                     setNewExpense({ ...newExpense, description: e.target.value })
                   }
+                  placeholder="Enter expense description"
                 />
               </div>
               <div className="space-y-2">
@@ -131,6 +160,7 @@ export default function ExpensesPage() {
                   onChange={(e) =>
                     setNewExpense({ ...newExpense, amount: e.target.value })
                   }
+                  placeholder="Enter amount"
                 />
               </div>
               <div className="space-y-2">
@@ -174,9 +204,9 @@ export default function ExpensesPage() {
               <Button
                 className="w-full"
                 onClick={handleCreateExpense}
-                disabled={!newExpense.description || !newExpense.amount || !newExpense.category || !selectedGroup}
+                disabled={!newExpense.description || !newExpense.amount || !newExpense.category || !selectedGroup || isLoading}
               >
-                Add Expense
+                {isLoading ? "Adding..." : "Add Expense"}
               </Button>
             </div>
           </DialogContent>

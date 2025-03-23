@@ -78,9 +78,32 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    // Get the user ID from the request
+    const userId = req.headers.get('x-user-id');
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Get all groups where the user is a member
+    const userGroups = await prisma.groupMember.findMany({
+      where: { userId },
+      select: { groupId: true }
+    });
+
+    const groupIds = userGroups.map(group => group.groupId);
+
+    // Get all expenses from groups where the user is a member
     const expenses = await prisma.expense.findMany({
+      where: {
+        groupId: {
+          in: groupIds
+        }
+      },
       include: {
         paidBy: true,
         group: true,

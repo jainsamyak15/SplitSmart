@@ -7,6 +7,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Loader2, SplitSquareVertical, MessageSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Home() {
   const [phone, setPhone] = useState("");
@@ -33,7 +34,7 @@ export default function Home() {
         if (data.otp) {
           setMockOtp(data.otp);
           setShowSmsNotification(true);
-          setTimeout(() => setShowSmsNotification(false), 10000);
+          setTimeout(() => setShowSmsNotification(false), 5000);
         }
         toast.success("OTP sent to your phone number!");
       } else {
@@ -73,6 +74,11 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-background to-secondary">
+      {/* Theme Toggle */}
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+
       <AnimatePresence>
         {showSmsNotification && (
           <motion.div

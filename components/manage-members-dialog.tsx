@@ -21,11 +21,16 @@ interface User {
   image: string | null;
 }
 
+interface GroupMember {
+  user: User;
+  role: "ADMIN" | "MEMBER";
+}
+
 interface ManageMembersDialogProps {
   groupId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  currentMembers: { user: User }[];
+  currentMembers: GroupMember[];
 }
 
 export function ManageMembersDialog({
@@ -46,7 +51,12 @@ export function ManageMembersDialog({
   }, [open]);
 
   useEffect(() => {
-    setSelectedUsers(currentMembers.map((member) => member.user.id));
+    // Only select non-admin members by default
+    setSelectedUsers(
+      currentMembers
+        .filter(member => member.role === "MEMBER")
+        .map(member => member.user.id)
+    );
   }, [currentMembers]);
 
   const fetchUsers = async () => {
@@ -70,9 +80,14 @@ export function ManageMembersDialog({
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+      
       const response = await fetch(`/api/groups/${groupId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "x-user-id": currentUser.id
+        },
         body: JSON.stringify({ members: selectedUsers }),
       });
 
@@ -91,6 +106,8 @@ export function ManageMembersDialog({
     }
   };
 
+  const adminMembers = currentMembers.filter(member => member.role === "ADMIN");
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -107,35 +124,64 @@ export function ManageMembersDialog({
             </div>
           ) : (
             <div className="space-y-4 max-h-[400px] overflow-y-auto">
-              {users.map((user) => (
+              {/* Show admin members first (disabled and always checked) */}
+              {adminMembers.map((member) => (
                 <div
-                  key={user.id}
-                  className="flex items-center space-x-4 p-2 hover:bg-muted/50 rounded-lg"
+                  key={member.user.id}
+                  className="flex items-center space-x-4 p-2 bg-muted/50 rounded-lg"
                 >
                   <Checkbox
-                    checked={selectedUsers.includes(user.id)}
-                    onCheckedChange={(checked) => {
-                      setSelectedUsers(
-                        checked
-                          ? [...selectedUsers, user.id]
-                          : selectedUsers.filter((id) => id !== user.id)
-                      );
-                    }}
+                    checked={true}
+                    disabled
                   />
                   <Avatar>
                     <AvatarImage
-                      src={user.image || `https://i.pravatar.cc/150?u=${user.id}`}
+                      src={member.user.image || `https://i.pravatar.cc/150?u=${member.user.id}`}
                     />
                     <AvatarFallback>
-                      {user.name?.[0] || user.phone[0]}
+                      {member.user.name?.[0] || member.user.phone[0]}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-medium">{user.name || "Unnamed"}</p>
-                    <p className="text-sm text-muted-foreground">{user.phone}</p>
+                    <p className="font-medium">{member.user.name || "Unnamed"}</p>
+                    <p className="text-sm text-muted-foreground">{member.user.phone}</p>
+                    <span className="text-xs text-primary">Admin</span>
                   </div>
                 </div>
               ))}
+
+              {/* Show other users */}
+              {users
+                .filter(user => !adminMembers.some(admin => admin.user.id === user.id))
+                .map((user) => (
+                  <div
+                    key={user.id}
+                    className="flex items-center space-x-4 p-2 hover:bg-muted/50 rounded-lg"
+                  >
+                    <Checkbox
+                      checked={selectedUsers.includes(user.id)}
+                      onCheckedChange={(checked) => {
+                        setSelectedUsers(
+                          checked
+                            ? [...selectedUsers, user.id]
+                            : selectedUsers.filter((id) => id !== user.id)
+                        );
+                      }}
+                    />
+                    <Avatar>
+                      <AvatarImage
+                        src={user.image || `https://i.pravatar.cc/150?u=${user.id}`}
+                      />
+                      <AvatarFallback>
+                        {user.name?.[0] || user.phone[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium">{user.name || "Unnamed"}</p>
+                      <p className="text-sm text-muted-foreground">{user.phone}</p>
+                    </div>
+                  </div>
+                ))}
             </div>
           )}
           <Button 

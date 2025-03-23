@@ -50,6 +50,31 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Get the user ID from the request
+    const userId = req.headers.get('x-user-id');
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Check if the user is an admin of the group
+    const groupMember = await prisma.groupMember.findFirst({
+      where: {
+        groupId: params.id,
+        userId: userId,
+        role: "ADMIN"
+      }
+    });
+
+    if (!groupMember) {
+      return NextResponse.json(
+        { error: "Only group admins can delete the group" },
+        { status: 403 }
+      );
+    }
+
     // Use a transaction to ensure all related records are deleted
     await prisma.$transaction(async (tx) => {
       // 1. Delete all splits related to the group's expenses
@@ -109,8 +134,33 @@ export async function PATCH(
       members: z.array(z.string()),
     });
 
+    // Get the user ID from the request
+    const userId = req.headers.get('x-user-id');
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     const { members } = schema.parse(body);
+
+    // Check if the user is an admin of the group
+    const groupMember = await prisma.groupMember.findFirst({
+      where: {
+        groupId: params.id,
+        userId: userId,
+        role: "ADMIN"
+      }
+    });
+
+    if (!groupMember) {
+      return NextResponse.json(
+        { error: "Only group admins can manage members" },
+        { status: 403 }
+      );
+    }
 
     // First, verify the group exists
     const group = await prisma.group.findUnique({

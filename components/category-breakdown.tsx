@@ -23,7 +23,18 @@ export function CategoryBreakdown() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const response = await fetch("/api/expenses");
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        if (!user.id) {
+          setIsLoading(false);
+          return;
+        }
+
+        const response = await fetch("/api/expenses", {
+          headers: {
+            'x-user-id': user.id
+          }
+        });
+        
         if (response.ok) {
           const expenses = await response.json();
           

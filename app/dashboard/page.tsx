@@ -29,57 +29,64 @@ export default function DashboardPage() {
           setIsLoading(false);
           return;
         }
-        
-        // Fetch all expenses with splits
-        const expensesResponse = await fetch("/api/expenses");
+
+        // Fetch expenses with splits
+        const expensesResponse = await fetch("/api/expenses", {
+          headers: {
+            'x-user-id': user.id
+          }
+        });
+
+        if (!expensesResponse.ok) {
+          throw new Error('Failed to fetch expenses');
+        }
+
+        const expenses = await expensesResponse.json();
+        let totalOwed = 0;
+        let totalOwing = 0;
+
+        // Calculate from expense splits
+        expenses.forEach((expense: any) => {
+          if (expense.splits) {
+            expense.splits.forEach((split: any) => {
+              if (split.debtorId === user.id) {
+                // You owe this amount
+                totalOwing += split.amount;
+              }
+              if (split.creditorId === user.id) {
+                // You are owed this amount
+                totalOwed += split.amount;
+              }
+            });
+          }
+        });
+
+        // Fetch settlements
         const settlementsResponse = await fetch("/api/settlements");
-        
-        if (expensesResponse.ok && settlementsResponse.ok) {
-          const expenses = await expensesResponse.json();
+        if (settlementsResponse.ok) {
           const settlements = await settlementsResponse.json();
           
-          let totalOwed = 0;
-          let totalOwing = 0;
-
-          // Calculate totals from splits
-          expenses.forEach((expense: any) => {
-            if (expense.splits) {
-              expense.splits.forEach((split: any) => {
-                if (!split.settled) { // Only count unsettled splits
-                  if (split.debtorId === user.id && split.creditorId !== user.id) {
-                    // You owe this amount
-                    totalOwing += split.amount;
-                  }
-                  if (split.creditorId === user.id && split.debtorId !== user.id) {
-                    // You are owed this amount
-                    totalOwed += split.amount;
-                  }
-                }
-              });
-            }
-          });
-
-          // Adjust totals based on settlements
+          // Adjust balances based on settlements
           settlements.forEach((settlement: any) => {
             if (settlement.fromId === user.id) {
               // You paid this settlement
               totalOwing -= settlement.amount;
-            } else {
+            } else if (settlement.toId === user.id) {
               // You received this settlement
               totalOwed -= settlement.amount;
             }
           });
-
-          // Ensure we don't show negative amounts
-          totalOwing = Math.max(0, totalOwing);
-          totalOwed = Math.max(0, totalOwed);
-
-          setData({
-            totalBalance: totalOwed - totalOwing,
-            youOwe: totalOwing,
-            youAreOwed: totalOwed
-          });
         }
+
+        // Ensure no negative amounts
+        totalOwing = Math.max(0, totalOwing);
+        totalOwed = Math.max(0, totalOwed);
+
+        setData({
+          totalBalance: totalOwed - totalOwing,
+          youOwe: totalOwing,
+          youAreOwed: totalOwed
+        });
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
       } finally {
@@ -99,21 +106,36 @@ export default function DashboardPage() {
       >
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-2">Total Balance</h3>
-          <p className={`text-3xl font-bold ${data.totalBalance >= 0 ? 'text-green-600' : 'text-destructive'}`}>
-            ${data.totalBalance.toFixed(2)}
+          <p className={`text-3xl font-bold ${data.totalBalance >= 0 ? 'text-green-600 dark:text-green-500' : 'text-destructive'}`}>
+            ${Math.abs(data.totalBalance).toFixed(2)}
           </p>
+          {data.totalBalance !== 0 && (
+            <p className="text-sm text-muted-foreground mt-1">
+              {data.totalBalance > 0 ? 'You are owed in total' : 'You owe in total'}
+            </p>
+          )}
         </Card>
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-2">You Owe</h3>
           <p className="text-3xl font-bold text-destructive">
             ${data.youOwe.toFixed(2)}
           </p>
+          {data.youOwe > 0 && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Total amount you need to pay
+            </p>
+          )}
         </Card>
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-2">You are Owed</h3>
-          <p className="text-3xl font-bold text-green-600">
+          <p className="text-3xl font-bold text-green-600 dark:text-green-500">
             ${data.youAreOwed.toFixed(2)}
           </p>
+          {data.youAreOwed > 0 && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Total amount to be received
+            </p>
+          )}
         </Card>
       </motion.div>
 
