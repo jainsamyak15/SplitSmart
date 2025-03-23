@@ -13,6 +13,19 @@ interface ExpenseData {
 export function ExpenseChart() {
   const [data, setData] = useState<ExpenseData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [chartHeight, setChartHeight] = useState(300);
+
+  useEffect(() => {
+    // Adjust chart height based on screen width
+    function handleResize() {
+      const width = window.innerWidth;
+      setChartHeight(width < 640 ? 250 : 300);
+    }
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     async function fetchData() {
@@ -21,14 +34,12 @@ export function ExpenseChart() {
         if (response.ok) {
           const expenses = await response.json();
           
-          // Group expenses by category and calculate total amount
           const categoryTotals = expenses.reduce((acc: Record<string, number>, expense: any) => {
             const category = expense.category;
             acc[category] = (acc[category] || 0) + expense.amount;
             return acc;
           }, {});
 
-          // Transform data for the chart
           const chartData = Object.entries(categoryTotals).map(([category, amount]) => ({
             name: category,
             value: amount as number
@@ -47,15 +58,15 @@ export function ExpenseChart() {
   }, []);
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-[300px]">Loading...</div>;
+    return <div className="flex items-center justify-center h-[250px] sm:h-[300px]">Loading...</div>;
   }
 
   if (data.length === 0) {
-    return <div className="flex items-center justify-center h-[300px]">No expense data available</div>;
+    return <div className="flex items-center justify-center h-[250px] sm:h-[300px]">No expense data available</div>;
   }
 
   return (
-    <div className="w-full h-[300px]">
+    <div className="w-full h-[250px] sm:h-[300px]">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
@@ -63,7 +74,7 @@ export function ExpenseChart() {
             cx="50%"
             cy="50%"
             labelLine={false}
-            outerRadius={80}
+            outerRadius={chartHeight * 0.25}
             fill="#8884d8"
             dataKey="value"
           >
@@ -71,7 +82,15 @@ export function ExpenseChart() {
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
-          <Legend />
+          <Legend
+            layout="horizontal"
+            verticalAlign="bottom"
+            align="center"
+            wrapperStyle={{
+              paddingTop: '20px',
+              fontSize: window.innerWidth < 640 ? '10px' : '12px'
+            }}
+          />
         </PieChart>
       </ResponsiveContainer>
     </div>
