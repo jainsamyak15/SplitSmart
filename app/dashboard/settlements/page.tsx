@@ -12,7 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogTrigger } from "@/components/ui/dialog";
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -34,6 +35,14 @@ export default function SettlementsPage() {
     description: "",
     groupId: "",
   });
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     fetchGroups();
@@ -90,7 +99,7 @@ export default function SettlementsPage() {
         type Settlement = {
           date: string;
           amount: number;
-          description: string;
+          description: string | null;
           from: { name?: string; phone?: string };
           group: { name: string };
         };
@@ -112,23 +121,27 @@ export default function SettlementsPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0">
         <div>
           <h1 className="text-3xl font-bold">Settlements</h1>
           <p className="text-muted-foreground">Manage and track settlements</p>
         </div>
 
-        <div className="flex gap-4">
-          <Button variant="outline" onClick={handleExport}>
+        <div className="flex w-full sm:w-auto gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleExport}
+            className="flex-1 sm:flex-none justify-center"
+          >
             <Download className="w-4 h-4 mr-2" />
-            Export
+            {isMobile ? "Export" : "Export to Excel"}
           </Button>
 
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="flex-1 sm:flex-none justify-center">
                 <Plus className="w-4 h-4 mr-2" />
-                New Settlement
+                {isMobile ? "New" : "New Settlement"}
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -148,6 +161,7 @@ export default function SettlementsPage() {
                     onChange={(e) =>
                       setNewSettlement({ ...newSettlement, amount: e.target.value })
                     }
+                    placeholder="Enter amount"
                   />
                 </div>
                 <div className="space-y-2">
@@ -158,6 +172,7 @@ export default function SettlementsPage() {
                     onChange={(e) =>
                       setNewSettlement({ ...newSettlement, description: e.target.value })
                     }
+                    placeholder="Enter description"
                   />
                 </div>
                 <div className="space-y-2">
@@ -204,7 +219,7 @@ export default function SettlementsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <Card className="p-6">
+        <Card className="p-4 sm:p-6">
           <SettlementList />
         </Card>
       </motion.div>
