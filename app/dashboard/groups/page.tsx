@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Users } from "lucide-react";
+import { Plus } from "lucide-react";
 import { GroupCard } from "@/components/group-card";
 import { toast } from "sonner";
 
@@ -22,14 +22,26 @@ export default function GroupsPage() {
   const [groups, setGroups] = useState<{ id: string; name: string; description: string; members: any[]; expenses: any[] }[]>([]);
   const [newGroup, setNewGroup] = useState({ name: "", description: "" });
   const [isOpen, setIsOpen] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
 
   useEffect(() => {
-    fetchGroups();
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    setCurrentUserId(user.id || "");
   }, []);
+
+  useEffect(() => {
+    if (currentUserId) {
+      fetchGroups();
+    }
+  }, [currentUserId]);
 
   const fetchGroups = async () => {
     try {
-      const response = await fetch("/api/groups");
+      const response = await fetch("/api/groups", {
+        headers: {
+          'x-user-id': currentUserId
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setGroups(data.map((group: any) => ({
@@ -37,6 +49,9 @@ export default function GroupsPage() {
           members: group.members || [],
           expenses: group.expenses || [],
         })));
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Failed to load groups");
       }
     } catch (error) {
       console.error("Failed to fetch groups:", error);

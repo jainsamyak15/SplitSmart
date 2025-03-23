@@ -34,10 +34,16 @@ export function ReceiptGenerator() {
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const receiptRef = React.useRef<HTMLDivElement>(null);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    setCurrentUserId(user.id || "");
+  }, []);
 
   useEffect(() => {
     fetchReceiptData();
-  }, []);
+  }, [currentUserId]);
 
   const fetchReceiptData = async () => {
     try {
@@ -89,9 +95,9 @@ export function ReceiptGenerator() {
           .filter((exp: any) => exp.paidById === user.id)
           .flatMap((exp: any) =>
             exp.splits
-              .filter((split: any) => !split.settled)
+              .filter((split: any) => split.debtorId !== user.id && !split.settled)
               .map((split: any) => ({
-                from: split.debtor.name || split.debtor.phone,
+                from: split.debtor.phone,
                 amount: split.amount,
                 group: exp.group.name,
               }))

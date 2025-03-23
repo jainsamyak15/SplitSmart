@@ -129,3 +129,56 @@ export async function GET(req: Request) {
     );
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const expenseId = searchParams.get('id');
+    const userId = req.headers.get('x-user-id');
+
+    if (!expenseId || !userId) {
+      return NextResponse.json(
+        { error: "Missing required parameters" },
+        { status: 400 }
+      );
+    }
+
+    // Check if the user is the creator of the expense
+    const expense = await prisma.expense.findUnique({
+      where: { id: expenseId },
+      select: { paidById: true }
+    });
+
+    if (!expense) {
+      return NextResponse.json(
+        { error: "Expense not found" },
+        { status: 404 }
+      );
+    }
+
+    if (expense.paidById !== userId) {
+      return NextResponse.json(
+        { error: "Unauthorized to delete this expense" },
+        { status: 403 }
+      );
+    }
+
+    // Delete the expense and related splits
+    await prisma.$transaction([
+      prisma.split.deleteMany({
+        where: { expenseId }
+      }),
+      prisma.expense.delete({
+        where: { id: expenseId }
+      })
+    ]);
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Failed to delete expense:", error);
+    return NextResponse.json(
+      { error: "Failed to delete expense" },
+      { status: 500 }
+    );
+  }
+}

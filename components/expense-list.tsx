@@ -14,6 +14,9 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 const categoryColors: Record<string, string> = {
   FOOD: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
@@ -58,6 +61,12 @@ export function ExpenseList({ groupId }: ExpenseListProps) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    setCurrentUserId(user.id || "");
+  }, []);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -91,6 +100,32 @@ export function ExpenseList({ groupId }: ExpenseListProps) {
       console.error("Failed to fetch expenses:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeleteExpense = async (expenseId: string) => {
+    if (!confirm("Are you sure you want to delete this expense?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/expenses?id=${expenseId}`, {
+        method: 'DELETE',
+        headers: {
+          'x-user-id': currentUserId
+        }
+      });
+
+      if (response.ok) {
+        toast.success("Expense deleted successfully");
+        fetchExpenses(); // Refresh the list
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Failed to delete expense");
+      }
+    } catch (error) {
+      console.error("Failed to delete expense:", error);
+      toast.error("Failed to delete expense");
     }
   };
 
@@ -129,9 +164,21 @@ export function ExpenseList({ groupId }: ExpenseListProps) {
                     {expense.category}
                   </Badge>
                 </div>
-                <p className="font-semibold text-lg">
-                  ₹{expense.amount.toFixed(2)}
-                </p>
+                <div className="flex items-start gap-2">
+                  <p className="font-semibold text-lg">
+                    ₹{expense.amount.toFixed(2)}
+                  </p>
+                  {expense.paidBy.id === currentUserId && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive"
+                      onClick={() => handleDeleteExpense(expense.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center gap-2 mb-2">
@@ -186,6 +233,7 @@ export function ExpenseList({ groupId }: ExpenseListProps) {
             <TableHead>Group</TableHead>
             <TableHead>Date</TableHead>
             <TableHead className="text-right">Amount</TableHead>
+            <TableHead></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -225,6 +273,18 @@ export function ExpenseList({ groupId }: ExpenseListProps) {
               </TableCell>
               <TableCell className="text-right font-medium">
                 ₹{expense.amount.toFixed(2)}
+              </TableCell>
+              <TableCell>
+                {expense.paidBy.id === currentUserId && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => handleDeleteExpense(expense.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </TableCell>
             </motion.tr>
           ))}

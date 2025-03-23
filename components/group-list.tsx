@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
+import { toast } from "sonner";
 
 interface Group {
   id: string;
@@ -27,6 +28,12 @@ export function GroupList() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    setCurrentUserId(user.id || "");
+  }, []);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 640);
@@ -36,29 +43,39 @@ export function GroupList() {
   }, []);
 
   useEffect(() => {
-    async function fetchGroups() {
-      try {
-        const response = await fetch("/api/groups");
-        if (response.ok) {
-          const data = await response.json();
-          const topGroups = data
-            .sort((a: Group, b: Group) => {
-              const totalA = a.expenses.reduce((sum: number, exp: any) => sum + exp.amount, 0);
-              const totalB = b.expenses.reduce((sum: number, exp: any) => sum + exp.amount, 0);
-              return totalB - totalA;
-            })
-            .slice(0, 5);
-          setGroups(topGroups);
-        }
-      } catch (error) {
-        console.error("Failed to fetch groups:", error);
-      } finally {
-        setIsLoading(false);
-      }
+    if (currentUserId) {
+      fetchGroups();
     }
+  }, [currentUserId]);
 
-    fetchGroups();
-  }, []);
+  async function fetchGroups() {
+    try {
+      const response = await fetch("/api/groups", {
+        headers: {
+          'x-user-id': currentUserId
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const topGroups = data
+          .sort((a: Group, b: Group) => {
+            const totalA = a.expenses.reduce((sum: number, exp: any) => sum + exp.amount, 0);
+            const totalB = b.expenses.reduce((sum: number, exp: any) => sum + exp.amount, 0);
+            return totalB - totalA;
+          })
+          .slice(0, 5);
+        setGroups(topGroups);
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Failed to fetch groups");
+      }
+    } catch (error) {
+      console.error("Failed to fetch groups:", error);
+      toast.error("Failed to fetch groups");
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   if (isLoading) {
     return <div className="text-center py-4">Loading groups...</div>;
