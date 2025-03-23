@@ -4,12 +4,6 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-const auth0 = new ManagementClient({
-  domain: process.env.AUTH0_DOMAIN!,
-  clientId: process.env.AUTH0_CLIENT_ID!,
-  clientSecret: process.env.AUTH0_CLIENT_SECRET!,
-});
-
 // Create a simple OTP store (in production, use Redis or a database)
 const otpStore = new Map<string, string>();
 
@@ -23,6 +17,21 @@ function validatePhoneNumber(phone: string): string {
   }
   
   throw new Error('Invalid phone number format');
+}
+
+let auth0: ManagementClient | null = null;
+
+// Initialize Auth0 client only if environment variables are available
+try {
+  if (process.env.AUTH0_DOMAIN && process.env.AUTH0_CLIENT_ID && process.env.AUTH0_CLIENT_SECRET) {
+    auth0 = new ManagementClient({
+      domain: process.env.AUTH0_DOMAIN,
+      clientId: process.env.AUTH0_CLIENT_ID,
+      clientSecret: process.env.AUTH0_CLIENT_SECRET,
+    });
+  }
+} catch (error) {
+  console.error('Failed to initialize Auth0 client:', error);
 }
 
 export async function POST(req: Request) {
