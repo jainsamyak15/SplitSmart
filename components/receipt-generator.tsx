@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { Card } from "@/components/ui/card";
@@ -33,7 +33,7 @@ interface Receipt {
 export function ReceiptGenerator() {
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const receiptRef = React.useRef<HTMLDivElement>(null);
+  const receiptRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchReceiptData();
@@ -171,109 +171,116 @@ export function ReceiptGenerator() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Daily Expense Receipt</h2>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={shareReceipt}>
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 className="text-xl sm:text-2xl font-bold">Daily Expense Receipt</h2>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button 
+            variant="outline" 
+            onClick={shareReceipt} 
+            className="flex-1 sm:flex-initial justify-center"
+          >
             <Share2 className="w-4 h-4 mr-2" />
             Share
           </Button>
-          <Button onClick={downloadAsPDF}>
+          <Button 
+            onClick={downloadAsPDF}
+            className="flex-1 sm:flex-initial justify-center"
+          >
             <Download className="w-4 h-4 mr-2" />
             Download PDF
           </Button>
         </div>
       </div>
 
-      <div ref={receiptRef} className="space-y-6 p-6 bg-background">
-        <Card className="p-6">
-          <div className="text-center mb-6">
-            <h3 className="text-2xl font-bold">Expense Receipt</h3>
-            <p className="text-muted-foreground">{receipt.date}</p>
+      <div ref={receiptRef} className="space-y-4 sm:space-y-6 p-4 sm:p-6 bg-background">
+        <Card className="p-4 sm:p-6">
+          <div className="text-center mb-4 sm:mb-6">
+            <h3 className="text-xl sm:text-2xl font-bold">Expense Receipt</h3>
+            <p className="text-sm sm:text-base text-muted-foreground">{receipt.date}</p>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div>
-              <h4 className="font-semibold mb-2">Your Expenses</h4>
+              <h4 className="text-base sm:text-lg font-semibold mb-2">Your Expenses</h4>
               {receipt.paidExpenses.length > 0 ? (
                 <div className="space-y-2">
                   {receipt.paidExpenses.map((expense, index) => (
                     <div
                       key={index}
-                      className="flex justify-between items-center py-2 border-b"
+                      className="flex flex-col sm:flex-row justify-between sm:items-center py-2 border-b gap-1 sm:gap-0"
                     >
                       <div>
-                        <p className="font-medium">{expense.description}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="font-medium text-sm sm:text-base">{expense.description}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">
                           {expense.group}
                         </p>
                       </div>
-                      <p className="font-semibold">${expense.amount.toFixed(2)}</p>
+                      <p className="font-semibold text-sm sm:text-base">${expense.amount.toFixed(2)}</p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground">No expenses today</p>
+                <p className="text-sm text-muted-foreground">No expenses today</p>
               )}
             </div>
 
             <div>
-              <h4 className="font-semibold mb-2">Pending Payments</h4>
+              <h4 className="text-base sm:text-lg font-semibold mb-2">Pending Payments</h4>
               {receipt.pendingPayments.length > 0 ? (
                 <div className="space-y-2">
                   {receipt.pendingPayments.map((payment, index) => (
                     <div
                       key={index}
-                      className="flex justify-between items-center py-2 border-b"
+                      className="flex flex-col sm:flex-row justify-between sm:items-center py-2 border-b gap-1 sm:gap-0"
                     >
                       <div>
-                        <p className="font-medium">To: {payment.to}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="font-medium text-sm sm:text-base">To: {payment.to}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">
                           {payment.group}
                         </p>
                       </div>
-                      <p className="font-semibold text-destructive">
+                      <p className="font-semibold text-sm sm:text-base text-destructive">
                         ${payment.amount.toFixed(2)}
                       </p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground">No pending payments</p>
+                <p className="text-sm text-muted-foreground">No pending payments</p>
               )}
             </div>
 
             <div>
-              <h4 className="font-semibold mb-2">Receivable Payments</h4>
+              <h4 className="text-base sm:text-lg font-semibold mb-2">Receivable Payments</h4>
               {receipt.receivablePayments.length > 0 ? (
                 <div className="space-y-2">
                   {receipt.receivablePayments.map((payment, index) => (
                     <div
                       key={index}
-                      className="flex justify-between items-center py-2 border-b"
+                      className="flex flex-col sm:flex-row justify-between sm:items-center py-2 border-b gap-1 sm:gap-0"
                     >
                       <div>
-                        <p className="font-medium">From: {payment.from}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="font-medium text-sm sm:text-base">From: {payment.from}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">
                           {payment.group}
                         </p>
                       </div>
-                      <p className="font-semibold text-green-600">
+                      <p className="font-semibold text-sm sm:text-base text-green-600">
                         ${payment.amount.toFixed(2)}
                       </p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground">No receivable payments</p>
+                <p className="text-sm text-muted-foreground">No receivable payments</p>
               )}
             </div>
 
             <div className="pt-4 border-t">
               <div className="flex justify-between items-center">
-                <p className="text-lg font-semibold">Total Expenses</p>
-                <p className="text-xl font-bold">
+                <p className="text-base sm:text-lg font-semibold">Total Expenses</p>
+                <p className="text-lg sm:text-xl font-bold">
                   ${receipt.totalExpenses.toFixed(2)}
                 </p>
               </div>

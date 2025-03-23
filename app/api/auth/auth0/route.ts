@@ -4,8 +4,14 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// Create a simple OTP store (in production, use Redis or a database)
-const otpStore = new Map<string, string>();
+// Create a simple OTP store with expiration timestamps
+interface OTPData {
+  code: string;
+  expiresAt: number;
+}
+
+const otpStore = new Map<string, OTPData>();
+const OTP_EXPIRY_SECONDS = 120; // 5 minutes
 
 function validatePhoneNumber(phone: string): string {
   // Remove any non-digit characters
@@ -50,15 +56,20 @@ export async function POST(req: Request) {
     // Generate a 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     
-    // Store OTP (in production, use Redis or a database)
-    otpStore.set(phone, otp);
+    // Store OTP with expiration timestamp
+    const expiresAt = Date.now() + (OTP_EXPIRY_SECONDS * 1000);
+    otpStore.set(phone, { code: otp, expiresAt });
     
-    // Always log the OTP for debugging
-    console.log(`OTP for ${phone}: ${otp}`);
+    // Always log the OTP and expiry for debugging
+    console.log(`OTP for ${phone}: ${otp} (expires in ${OTP_EXPIRY_SECONDS} seconds)`);
 
-    // In development, return the OTP in the response
+    // In development, return the OTP and expiry in the response
     if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_SHOW_OTP === 'true') {
-      return NextResponse.json({ success: true, otp });
+      return NextResponse.json({ 
+        success: true, 
+        otp,
+        expiresIn: OTP_EXPIRY_SECONDS
+      });
     }
 
     // In production, only return success status
@@ -86,8 +97,25 @@ export async function PUT(req: Request) {
     }
 
     // Verify OTP
-    const storedOTP = otpStore.get(phone);
-    if (!storedOTP || storedOTP !== otp) {
+    const storedData = otpStore.get(phone);
+    if (!storedData) {
+      return NextResponse.json(
+        { error: "OTP not found. Please request a new one." },
+        { status: 401 }
+      );
+    }
+
+    // Check if OTP has expired
+    if (Date.now() > storedData.expiresAt) {
+      otpStore.delete(phone); // Clean up expired OTP
+      return NextResponse.json(
+        { error: "OTP has expired. Please request a new one." },
+        { status: 401 }
+      );
+    }
+
+    // Verify OTP code
+    if (storedData.code !== otp) {
       return NextResponse.json(
         { error: "Invalid OTP" },
         { status: 401 }

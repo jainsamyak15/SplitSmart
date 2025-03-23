@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Loader2, SplitSquareVertical, MessageSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -16,7 +16,28 @@ export default function Home() {
   const [showOtp, setShowOtp] = useState(false);
   const [showSmsNotification, setShowSmsNotification] = useState(false);
   const [mockOtp, setMockOtp] = useState("");
+  const [otpExpiry, setOtpExpiry] = useState<number | null>(null);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (otpExpiry) {
+      timer = setInterval(() => {
+        const now = Date.now();
+        const remaining = Math.max(0, Math.ceil((otpExpiry - now) / 1000));
+        setTimeLeft(remaining);
+        
+        if (remaining === 0) {
+          clearInterval(timer);
+          setShowOtp(false);
+          setOtp("");
+          toast.error("OTP has expired. Please request a new one.");
+        }
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [otpExpiry]);
 
   const handleSendOtp = async () => {
     setIsLoading(true);
@@ -34,7 +55,11 @@ export default function Home() {
         if (data.otp) {
           setMockOtp(data.otp);
           setShowSmsNotification(true);
-          setTimeout(() => setShowSmsNotification(false), 12000);
+          setTimeout(() => setShowSmsNotification(false), 30000);
+          
+          // Set OTP expiry
+          const expiryTime = Date.now() + (data.expiresIn * 1000);
+          setOtpExpiry(expiryTime);
         }
         toast.success("OTP sent to your phone number!");
       } else {
@@ -64,12 +89,24 @@ export default function Home() {
       } else {
         const data = await response.json();
         toast.error(data.error || "Invalid OTP");
+        if (data.error?.includes("expired")) {
+          setShowOtp(false);
+          setOtp("");
+          setOtpExpiry(null);
+          setTimeLeft(null);
+        }
       }
     } catch (error) {
       toast.error("Login failed");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -134,14 +171,21 @@ export default function Home() {
               maxLength={10}
             />
             {showOtp && (
-              <Input
-                type="text"
-                placeholder="Enter OTP"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                className="text-center"
-                maxLength={6}
-              />
+              <>
+                <Input
+                  type="text"
+                  placeholder="Enter OTP"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  className="text-center"
+                  maxLength={6}
+                />
+                {timeLeft !== null && (
+                  <p className="text-sm text-center text-muted-foreground">
+                    OTP expires in {formatTime(timeLeft)}
+                  </p>
+                )}
+              </>
             )}
             <Button
               className="w-full"
@@ -157,6 +201,20 @@ export default function Home() {
                 showOtp ? "Login" : "Send OTP"
               )}
             </Button>
+            {showOtp && (
+              <Button
+                variant="ghost"
+                className="w-full"
+                onClick={() => {
+                  setShowOtp(false);
+                  setOtp("");
+                  setOtpExpiry(null);
+                  setTimeLeft(null);
+                }}
+              >
+                Change Phone Number
+              </Button>
+            )}
           </div>
         </motion.div>
 
