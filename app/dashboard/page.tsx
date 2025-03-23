@@ -31,9 +31,12 @@ export default function DashboardPage() {
         }
         
         // Fetch all expenses with splits
-        const response = await fetch("/api/expenses");
-        if (response.ok) {
-          const expenses = await response.json();
+        const expensesResponse = await fetch("/api/expenses");
+        const settlementsResponse = await fetch("/api/settlements");
+        
+        if (expensesResponse.ok && settlementsResponse.ok) {
+          const expenses = await expensesResponse.json();
+          const settlements = await settlementsResponse.json();
           
           let totalOwed = 0;
           let totalOwing = 0;
@@ -42,17 +45,34 @@ export default function DashboardPage() {
           expenses.forEach((expense: any) => {
             if (expense.splits) {
               expense.splits.forEach((split: any) => {
-                if (split.debtorId === user.id && split.creditorId !== user.id) {
-                  // You owe this amount
-                  totalOwing += split.amount;
-                }
-                if (split.creditorId === user.id && split.debtorId !== user.id) {
-                  // You are owed this amount
-                  totalOwed += split.amount;
+                if (!split.settled) { // Only count unsettled splits
+                  if (split.debtorId === user.id && split.creditorId !== user.id) {
+                    // You owe this amount
+                    totalOwing += split.amount;
+                  }
+                  if (split.creditorId === user.id && split.debtorId !== user.id) {
+                    // You are owed this amount
+                    totalOwed += split.amount;
+                  }
                 }
               });
             }
           });
+
+          // Adjust totals based on settlements
+          settlements.forEach((settlement: any) => {
+            if (settlement.fromId === user.id) {
+              // You paid this settlement
+              totalOwing -= settlement.amount;
+            } else {
+              // You received this settlement
+              totalOwed -= settlement.amount;
+            }
+          });
+
+          // Ensure we don't show negative amounts
+          totalOwing = Math.max(0, totalOwing);
+          totalOwed = Math.max(0, totalOwed);
 
           setData({
             totalBalance: totalOwed - totalOwing,

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Home,
   Users,
@@ -27,7 +28,6 @@ const navItems = [
   { href: "/dashboard/settlements", label: "Settlements", icon: Wallet },
   { href: "/dashboard/analytics", label: "Analytics", icon: PieChart },
   { href: "/dashboard/profile", label: "Profile", icon: UserCircle },
-  // { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
 export function DashboardNav() {
@@ -47,9 +47,12 @@ export function DashboardNav() {
         animate={{ x: 0 }}
         className="hidden md:flex flex-col w-64 bg-card border-r p-4"
       >
-        <div className="flex items-center gap-2 px-2 py-4">
-          <SplitSquareVertical className="w-6 h-6" />
-          <span className="text-2xl font-bold">SplitSmart</span>
+        <div className="flex items-center justify-between px-2 py-4">
+          <div className="flex items-center gap-2">
+            <SplitSquareVertical className="w-6 h-6" />
+            <span className="text-2xl font-bold">SplitSmart</span>
+          </div>
+          <ThemeToggle />
         </div>
 
         <div className="flex-1 py-8 space-y-1">
@@ -84,17 +87,19 @@ export function DashboardNav() {
 
       {/* Mobile Menu */}
       <div className="md:hidden">
-        <Button
-          variant="ghost"
-          className="fixed top-4 right-4 z-50"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        >
-          {isMobileMenuOpen ? (
-            <X className="w-6 h-6" />
-          ) : (
-            <Menu className="w-6 h-6" />
-          )}
-        </Button>
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+          <ThemeToggle />
+          <Button
+            variant="ghost"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? (
+              <X className="w-6 h-6" />
+            ) : (
+              <Menu className="w-6 h-6" />
+            )}
+          </Button>
+        </div>
 
         {isMobileMenuOpen && (
           <motion.div
