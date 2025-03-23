@@ -50,8 +50,44 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    await prisma.group.delete({
-      where: { id: params.id },
+    // Use a transaction to ensure all related records are deleted
+    await prisma.$transaction(async (tx) => {
+      // 1. Delete all splits related to the group's expenses
+      await tx.split.deleteMany({
+        where: {
+          expense: {
+            groupId: params.id
+          }
+        }
+      });
+
+      // 2. Delete all settlements for the group
+      await tx.settlement.deleteMany({
+        where: {
+          groupId: params.id
+        }
+      });
+
+      // 3. Delete all expenses for the group
+      await tx.expense.deleteMany({
+        where: {
+          groupId: params.id
+        }
+      });
+
+      // 4. Delete all group members
+      await tx.groupMember.deleteMany({
+        where: {
+          groupId: params.id
+        }
+      });
+
+      // 5. Finally, delete the group itself
+      await tx.group.delete({
+        where: {
+          id: params.id
+        }
+      });
     });
 
     return NextResponse.json({ success: true });

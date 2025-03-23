@@ -18,19 +18,54 @@ export async function POST(req: Request) {
     const body = await req.json();
     const data = schema.parse(body);
 
-    const expense = await prisma.expense.create({
-      data: {
-        amount: data.amount,
-        description: data.description,
-        category: data.category as any,
-        date: new Date(data.date),
-        group: { connect: { id: data.groupId } },
-        paidBy: { connect: { id: data.paidById } },
-      },
-      include: {
-        paidBy: true,
-        group: true,
-      },
+    // Start a transaction to create expense and splits
+    const expense = await prisma.$transaction(async (tx) => {
+      // 1. Create the expense
+      const expense = await tx.expense.create({
+        data: {
+          amount: data.amount,
+          description: data.description,
+          category: data.category as any,
+          date: new Date(data.date),
+          group: { connect: { id: data.groupId } },
+          paidBy: { connect: { id: data.paidById } },
+        },
+        include: {
+          paidBy: true,
+          group: {
+            include: {
+              members: {
+                include: {
+                  user: true
+                }
+              }
+            }
+          },
+        },
+      });
+
+      // 2. Get number of members in the group
+      const memberCount = expense.group.members.length;
+      const splitAmount = expense.amount / memberCount;
+
+      // 3. Create splits for each member
+      const splits = await Promise.all(
+        expense.group.members.map((member) => 
+          tx.split.create({
+            data: {
+              expenseId: expense.id,
+              amount: splitAmount,
+              debtorId: member.user.id,
+              creditorId: data.paidById,
+            }
+          })
+        )
+      );
+
+      return {
+        ...expense,
+        splits
+      };
     });
 
     return NextResponse.json(expense);
@@ -49,6 +84,12 @@ export async function GET() {
       include: {
         paidBy: true,
         group: true,
+        splits: {
+          include: {
+            debtor: true,
+            creditor: true
+          }
+        }
       },
       orderBy: {
         date: 'desc',

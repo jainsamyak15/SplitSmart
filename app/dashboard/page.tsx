@@ -1,12 +1,75 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { ExpenseChart } from "@/components/expense-chart";
 import { RecentExpenses } from "@/components/recent-expenses";
 import { GroupList } from "@/components/group-list";
 
+interface DashboardData {
+  totalBalance: number;
+  youOwe: number;
+  youAreOwed: number;
+}
+
 export default function DashboardPage() {
+  const [data, setData] = useState<DashboardData>({
+    totalBalance: 0,
+    youOwe: 0,
+    youAreOwed: 0
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchDashboardData() {
+      try {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        if (!user.id) {
+          setIsLoading(false);
+          return;
+        }
+        
+        // Fetch all expenses with splits
+        const response = await fetch("/api/expenses");
+        if (response.ok) {
+          const expenses = await response.json();
+          
+          let totalOwed = 0;
+          let totalOwing = 0;
+
+          // Calculate totals from splits
+          expenses.forEach((expense: any) => {
+            if (expense.splits) {
+              expense.splits.forEach((split: any) => {
+                if (split.debtorId === user.id && split.creditorId !== user.id) {
+                  // You owe this amount
+                  totalOwing += split.amount;
+                }
+                if (split.creditorId === user.id && split.debtorId !== user.id) {
+                  // You are owed this amount
+                  totalOwed += split.amount;
+                }
+              });
+            }
+          });
+
+          setData({
+            totalBalance: totalOwed - totalOwing,
+            youOwe: totalOwing,
+            youAreOwed: totalOwed
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchDashboardData();
+  }, []);
+
   return (
     <div className="space-y-8">
       <motion.div
@@ -16,15 +79,21 @@ export default function DashboardPage() {
       >
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-2">Total Balance</h3>
-          <p className="text-3xl font-bold text-primary">$1,234.56</p>
+          <p className={`text-3xl font-bold ${data.totalBalance >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+            ${data.totalBalance.toFixed(2)}
+          </p>
         </Card>
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-2">You Owe</h3>
-          <p className="text-3xl font-bold text-destructive">$234.56</p>
+          <p className="text-3xl font-bold text-destructive">
+            ${data.youOwe.toFixed(2)}
+          </p>
         </Card>
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-2">You are Owed</h3>
-          <p className="text-3xl font-bold text-green-600">$1,469.12</p>
+          <p className="text-3xl font-bold text-green-600">
+            ${data.youAreOwed.toFixed(2)}
+          </p>
         </Card>
       </motion.div>
 

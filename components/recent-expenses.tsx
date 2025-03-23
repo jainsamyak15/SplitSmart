@@ -1,6 +1,8 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { format } from "date-fns";
 import {
   Table,
   TableBody,
@@ -11,43 +13,55 @@ import {
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-const recentExpenses = [
-  {
-    id: 1,
-    description: "Dinner at Restaurant",
-    amount: 120.50,
-    paidBy: {
-      name: "John Doe",
-      avatar: "https://i.pravatar.cc/150?u=john",
-    },
-    date: "2024-03-20",
-    category: "Food",
-  },
-  {
-    id: 2,
-    description: "Movie Tickets",
-    amount: 45.00,
-    paidBy: {
-      name: "Jane Smith",
-      avatar: "https://i.pravatar.cc/150?u=jane",
-    },
-    date: "2024-03-19",
-    category: "Entertainment",
-  },
-  {
-    id: 3,
-    description: "Uber Ride",
-    amount: 25.75,
-    paidBy: {
-      name: "Mike Johnson",
-      avatar: "https://i.pravatar.cc/150?u=mike",
-    },
-    date: "2024-03-18",
-    category: "Transport",
-  },
-];
+interface Expense {
+  id: string;
+  description: string;
+  amount: number;
+  category: string;
+  date: string;
+  paidBy: {
+    name: string | null;
+    avatar: string | null;
+    id: string;
+  };
+}
 
 export function RecentExpenses() {
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchExpenses() {
+      try {
+        const response = await fetch("/api/expenses");
+        if (response.ok) {
+          const data = await response.json();
+          // Sort by date and take the most recent 5 expenses
+          const recentExpenses = data
+            .sort((a: Expense, b: Expense) => 
+              new Date(b.date).getTime() - new Date(a.date).getTime()
+            )
+            .slice(0, 5);
+          setExpenses(recentExpenses);
+        }
+      } catch (error) {
+        console.error("Failed to fetch expenses:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchExpenses();
+  }, []);
+
+  if (isLoading) {
+    return <div className="text-center py-4">Loading expenses...</div>;
+  }
+
+  if (expenses.length === 0) {
+    return <div className="text-center py-4">No recent expenses found</div>;
+  }
+
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -60,7 +74,7 @@ export function RecentExpenses() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {recentExpenses.map((expense, index) => (
+          {expenses.map((expense, index) => (
             <motion.tr
               key={expense.id}
               initial={{ opacity: 0, y: 20 }}
@@ -72,12 +86,14 @@ export function RecentExpenses() {
               <TableCell>
                 <div className="flex items-center gap-2">
                   <Avatar className="h-6 w-6">
-                    <AvatarImage src={expense.paidBy.avatar} />
+                    <AvatarImage 
+                      src={expense.paidBy.avatar || `https://i.pravatar.cc/150?u=${expense.paidBy.id}`} 
+                    />
                     <AvatarFallback>
-                      {expense.paidBy.name.charAt(0)}
+                      {expense.paidBy.name?.[0] || 'U'}
                     </AvatarFallback>
                   </Avatar>
-                  {expense.paidBy.name}
+                  {expense.paidBy.name || 'Unknown'}
                 </div>
               </TableCell>
               <TableCell>{expense.category}</TableCell>
