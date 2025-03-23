@@ -44,6 +44,7 @@
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
   }
+
   .dark {
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
@@ -78,5 +79,56 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Mobile-first responsive styles */
+@media (max-width: 640px) {
+  .recharts-wrapper {
+    margin: 0 -1rem;
+  }
+  
+  .recharts-surface {
+    overflow: visible;
+  }
+
+  .recharts-legend-wrapper {
+    position: relative !important;
+    margin-top: 1rem !important;
+  }
+}
+
+/* Improved touch targets for mobile */
+@media (max-width: 640px) {
+  button, 
+  [role="button"],
+  a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+    padding: 0.75rem;
+  }
+}
+
+/* Safe area insets for modern mobile browsers */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: min(1rem, env(safe-area-inset-left));
+    padding-right: min(1rem, env(safe-area-inset-right));
+    padding-bottom: min(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Improved scrolling on iOS */
+@supports (-webkit-overflow-scrolling: touch) {
+  .overflow-auto,
+  .overflow-y-auto,
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
   }
 }
