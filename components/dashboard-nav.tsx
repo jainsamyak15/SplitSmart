@@ -18,6 +18,7 @@ import {
   SplitSquareVertical,
   UserCircle,
   Wallet,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +28,7 @@ const navItems = [
   { href: "/dashboard/expenses", label: "Expenses", icon: Receipt },
   { href: "/dashboard/settlements", label: "Settlements", icon: Wallet },
   { href: "/dashboard/analytics", label: "Analytics", icon: PieChart },
+  { href: "/dashboard/receipt", label: "Daily Receipt", icon: FileText },
   { href: "/dashboard/profile", label: "Profile", icon: UserCircle },
 ];
 
