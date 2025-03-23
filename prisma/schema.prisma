@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  phone         String    @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  groups        GroupMember[]
+  expenses      Expense[]
+  settlements   Settlement[]
+  debtorSplits Split[]    @relation("debtor")
+  creditorSplits Split[]   @relation("creditor")
+}
+
+model Group {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  image       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  members     GroupMember[]
+  expenses    Expense[]
+  settlements Settlement[]
+}
+
+model GroupMember {
+  id        String   @id @default(cuid())
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  role      Role     @default(MEMBER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([groupId, userId])
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  amount      Float
+  description String
+  date        DateTime
+  paidBy      User     @relation(fields: [paidById], references: [id])
+  paidById    String
+  group       Group    @relation(fields: [groupId], references: [id])
+  groupId     String
+  category    Category @default(OTHER)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  splits      Split[]
+}
+
+model Split {
+  id         String   @id @default(cuid())
+  expense    Expense  @relation(fields: [expenseId], references: [id])
+  expenseId  String
+  amount     Float
+  debtor     User     @relation("debtor", fields: [debtorId], references: [id])
+  debtorId   String
+  creditor   User     @relation("creditor", fields: [creditorId], references: [id])
+  creditorId String
+  settled    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([expenseId, debtorId, creditorId])
+}
+
+model Settlement {
+  id          String   @id @default(cuid())
+  amount      Float
+  from        User     @relation(fields: [fromId], references: [id])
+  fromId      String
+  group       Group    @relation(fields: [groupId], references: [id])
+  groupId     String
+  description String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum Category {
+  FOOD
+  TRANSPORT
+  SHOPPING
+  ENTERTAINMENT
+  UTILITIES
+  RENT
+  OTHER
+}
