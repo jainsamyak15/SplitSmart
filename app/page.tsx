@@ -206,10 +206,25 @@ export default function Home() {
               type="tel"
               placeholder="Enter your 10-digit phone number"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                // Only allow digits
+                if (!/^\d*$/.test(value)) return;
+                // Prevent numbers starting with 0
+                if (value.startsWith('0')) {
+                  toast.error("Phone number cannot start with 0");
+                  return;
+                }
+                setPhone(value);
+              }}
               className="text-center"
               disabled={showOtp}
               maxLength={10}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && phone && !isLoading) {
+                  handleSendOtp();
+                }
+              }}
             />
             {showOtp && (
               <>
@@ -220,6 +235,11 @@ export default function Home() {
                   onChange={(e) => setOtp(e.target.value)}
                   className="text-center"
                   maxLength={6}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && otp && !isLoading) {
+                      handleLogin();
+                    }
+                  }}
                 />
                 {timeLeft !== null && (
                   <p className="text-sm text-center text-muted-foreground">
