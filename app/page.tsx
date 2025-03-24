@@ -5,13 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Loader2, SplitSquareVertical, MessageSquare } from "lucide-react";
+import {
+  Loader2,
+  SplitSquareVertical,
+  MessageSquare,
+  Copy,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Home() {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
+  const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [showSmsNotification, setShowSmsNotification] = useState(false);
@@ -39,7 +45,7 @@ export default function Home() {
         const now = Date.now();
         const remaining = Math.max(0, Math.ceil((otpExpiry - now) / 1000));
         setTimeLeft(remaining);
-        
+
         if (remaining === 0) {
           clearInterval(timer);
           setShowOtp(false);
@@ -50,6 +56,12 @@ export default function Home() {
     }
     return () => clearInterval(timer);
   }, [otpExpiry]);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(mockOtp);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleSendOtp = async () => {
     setIsLoading(true);
@@ -68,9 +80,9 @@ export default function Home() {
           setMockOtp(data.otp);
           setShowSmsNotification(true);
           setTimeout(() => setShowSmsNotification(false), 30000);
-          
+
           // Set OTP expiry
-          const expiryTime = Date.now() + (data.expiresIn * 1000);
+          const expiryTime = Date.now() + data.expiresIn * 1000;
           setOtpExpiry(expiryTime);
         }
         toast.success("OTP sent to your phone number!");
@@ -118,7 +130,7 @@ export default function Home() {
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   return (
@@ -145,7 +157,19 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground mb-2">
                   Your SplitSmart verification code is:
                 </p>
-                <p className="font-mono text-lg font-bold tracking-wider">{mockOtp}</p>
+                <div
+                  className="relative cursor-pointer inline-block"
+                  onMouseEnter={handleCopy}
+                >
+                  <p className="font-mono text-lg font-bold tracking-wider">
+                    {mockOtp}
+                  </p>
+                  {copied && (
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs bg-gray-800 text-white py-1 px-2 rounded">
+                      Copied!
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </motion.div>
@@ -209,8 +233,10 @@ export default function Home() {
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {showOtp ? "Verifying..." : "Sending OTP..."}
                 </>
+              ) : showOtp ? (
+                "Login"
               ) : (
-                showOtp ? "Login" : "Send OTP"
+                "Send OTP"
               )}
             </Button>
             {showOtp && (
@@ -254,7 +280,13 @@ export default function Home() {
   );
 }
 
-function Feature({ title, description }: { title: string; description: string }) {
+function Feature({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
   return (
     <motion.div
       whileHover={{ scale: 1.05 }}
