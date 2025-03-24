@@ -22,7 +22,7 @@ export function SplashScreen() {
       initial={{ opacity: 1 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-background"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-background"
     >
       <div className="relative flex flex-col items-center">
         <motion.div
