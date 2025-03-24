@@ -109,21 +109,13 @@ export async function scheduleExpenseNotification(expense: any) {
     return;
   }
 
-  console.log('Current user:', currentUser.id);
-  console.log('Expense:', expense);
-  console.log('Splits:', expense.splits);
-
   // Check if user needs to pay (they are in splits as a debtor)
   const debtorSplits = expense.splits.filter((split: any) => 
-    split.debtorId === currentUser.id
+    split.debtorId === currentUser.id && split.creditorId !== currentUser.id // Don't notify for self-payments
   );
 
   // Check if user needs to collect (they are the payer)
   const isCreditor = expense.paidById === currentUser.id;
-
-  console.log('Debtor splits:', debtorSplits);
-  console.log('Is creditor:', isCreditor);
-
   // Send notifications for each split where user is debtor
   for (const split of debtorSplits) {
     await scheduleNotification(
@@ -143,10 +135,10 @@ export async function scheduleExpenseNotification(expense: any) {
     );
   }
 
-  // If user is the creditor, calculate total amount to receive
+  // If user is the creditor, calculate total amount to receive from others
   if (isCreditor) {
     const totalToReceive = expense.splits.reduce((sum: number, split: any) => 
-      split.debtorId !== currentUser.id ? sum + split.amount : sum,
+      split.debtorId !== currentUser.id ? sum + split.amount : sum, // Only count amounts from other users
       0
     );
 

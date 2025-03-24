@@ -104,7 +104,7 @@ export default function ExpensesPage() {
       toast.error("Failed to fetch groups");
     }
   };
-
+  
   const handleCreateExpense = async () => {
     try {
       setIsLoading(true);
@@ -137,7 +137,7 @@ export default function ExpensesPage() {
 
       if (response.ok) {
         const createdExpense = await response.json();
-        setLastCreatedExpense(createdExpense); // Store the created expense
+        setLastCreatedExpense(createdExpense);
         toast.success("Expense added successfully!");
         setIsOpen(false);
         setNewExpense({ description: "", amount: "", category: "" });
@@ -263,10 +263,10 @@ export default function ExpensesPage() {
                 className="w-full"
                 onClick={handleCreateExpense}
                 disabled={
-                  !newExpense.description ||
-                  !newExpense.amount ||
-                  !newExpense.category ||
-                  !selectedGroup ||
+                  !newExpense.description || 
+                  !newExpense.amount || 
+                  !newExpense.category || 
+                  !selectedGroup || 
                   selectedMembers.length === 0 ||
                   isLoading
                 }
@@ -294,9 +294,11 @@ export default function ExpensesPage() {
         </Card>
       </motion.div>
 
-      {/* Add ExpenseNotification component */}
       {lastCreatedExpense && (
-        <ExpenseNotification expense={lastCreatedExpense} />
+        <ExpenseNotification 
+          expense={lastCreatedExpense} 
+          isNewExpense={true}
+        />
       )}
     </div>
   );
