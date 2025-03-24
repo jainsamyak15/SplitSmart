@@ -39,9 +39,37 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const userId = req.headers.get('x-user-id');
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Get all groups where the user is either a member or an admin
+    const userGroups = await prisma.groupMember.findMany({
+      where: {
+        userId,
+        OR: [
+          { role: "MEMBER" },
+          { role: "ADMIN" }
+        ]
+      },
+      select: { groupId: true }
+    });
+
+    const groupIds = userGroups.map(group => group.groupId);
+
+    // Get settlements from groups where the user is a member or admin
     const settlements = await prisma.settlement.findMany({
+      where: {
+        groupId: {
+          in: groupIds
+        }
+      },
       include: {
         from: true,
         group: true,

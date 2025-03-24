@@ -36,6 +36,12 @@ export default function SettlementsPage() {
     groupId: "",
   });
   const [isMobile, setIsMobile] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    setCurrentUserId(user.id || "");
+  }, []);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 640);
@@ -45,18 +51,28 @@ export default function SettlementsPage() {
   }, []);
 
   useEffect(() => {
-    fetchGroups();
-  }, []);
+    if (currentUserId && isOpen) {
+      fetchGroups();
+    }
+  }, [currentUserId, isOpen]);
 
   const fetchGroups = async () => {
     try {
-      const response = await fetch("/api/groups");
+      const response = await fetch("/api/groups", {
+        headers: {
+          'x-user-id': currentUserId
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setGroups(data);
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Failed to fetch groups");
       }
     } catch (error) {
       console.error("Failed to fetch groups:", error);
+      toast.error("Failed to fetch groups");
     }
   };
 
@@ -67,7 +83,10 @@ export default function SettlementsPage() {
       
       const response = await fetch("/api/settlements", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          'x-user-id': user.id
+        },
         body: JSON.stringify({
           amount: parseFloat(newSettlement.amount),
           description: newSettlement.description,
@@ -93,7 +112,11 @@ export default function SettlementsPage() {
 
   const handleExport = async () => {
     try {
-      const response = await fetch("/api/settlements");
+      const response = await fetch("/api/settlements", {
+        headers: {
+          'x-user-id': currentUserId
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         type Settlement = {

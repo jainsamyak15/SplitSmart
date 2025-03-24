@@ -35,6 +35,12 @@ export function SettlementList() {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    setCurrentUserId(user.id || "");
+  }, []);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 640);
@@ -44,22 +50,28 @@ export function SettlementList() {
   }, []);
 
   useEffect(() => {
-    async function fetchSettlements() {
-      try {
-        const response = await fetch("/api/settlements");
-        if (response.ok) {
-          const data = await response.json();
-          setSettlements(data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch settlements:", error);
-      } finally {
-        setIsLoading(false);
-      }
+    if (currentUserId) {
+      fetchSettlements();
     }
+  }, [currentUserId]);
 
-    fetchSettlements();
-  }, []);
+  const fetchSettlements = async () => {
+    try {
+      const response = await fetch("/api/settlements", {
+        headers: {
+          'x-user-id': currentUserId
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSettlements(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch settlements:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (isLoading) {
     return <div className="text-center py-4">Loading settlements...</div>;

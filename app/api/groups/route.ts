@@ -55,12 +55,16 @@ export async function GET(req: Request) {
       );
     }
 
-    // Get all groups where the user is a member
+    // Get all groups where the user is a member or admin
     const groups = await prisma.group.findMany({
       where: {
         members: {
           some: {
-            userId: userId
+            userId,
+            OR: [
+              { role: "MEMBER" },
+              { role: "ADMIN" }
+            ]
           }
         }
       },

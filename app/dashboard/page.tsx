@@ -49,12 +49,12 @@ export default function DashboardPage() {
         expenses.forEach((expense: any) => {
           if (expense.splits) {
             expense.splits.forEach((split: any) => {
-              if (split.debtorId === user.id) {
-                // You owe this amount
+              if (split.debtorId === user.id && split.creditorId !== user.id) {
+                // You owe this amount to someone else
                 totalOwing += split.amount;
               }
-              if (split.creditorId === user.id) {
-                // You are owed this amount
+              if (split.creditorId === user.id && split.debtorId !== user.id) {
+                // Someone else owes you this amount
                 totalOwed += split.amount;
               }
             });
