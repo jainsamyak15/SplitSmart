@@ -46,14 +46,15 @@ export async function scheduleNotification(title: string, options: {
   notifications.push(notification);
   localStorage.setItem('notifications', JSON.stringify(notifications));
 
-  // Schedule the notification
+  // Schedule the notification immediately for testing
   setTimeout(() => {
     new Notification(title, {
       body: options.body,
       tag: options.tag,
       icon: '/icons/icon-192x192.png',
       badge: '/icons/icon-96x96.png',
-      data: options.data
+      data: options.data,
+      requireInteraction: true // Keep notification visible until user interacts
     });
 
     // Remove from localStorage after showing
@@ -82,38 +83,44 @@ export async function scheduleExpenseNotification(expense: any) {
     return;
   }
 
-  // Find the split for the current user
-  const userSplit = expense.splits.find((split: any) => split.debtor?.id === currentUser.id);
-  const isPayer = userSplit !== undefined;
-  const isReceiver = expense.paidBy?.id === currentUser.id;
+  console.log('Current user:', currentUser.id);
+  console.log('Expense:', expense);
+  console.log('Splits:', expense.splits);
 
-  if (!isPayer && !isReceiver) {
-    console.log('User is neither payer nor receiver');
-    return;
-  }
+  // Check if user needs to pay (they are in splits as a debtor)
+  const debtorSplits = expense.splits.filter((split: any) => 
+    split.debtorId === currentUser.id
+  );
 
-  if (isPayer && userSplit) {
-    // User needs to pay
+  // Check if user needs to collect (they are the payer)
+  const isCreditor = expense.paidById === currentUser.id;
+
+  console.log('Debtor splits:', debtorSplits);
+  console.log('Is creditor:', isCreditor);
+
+  // Send notifications for each split where user is debtor
+  for (const split of debtorSplits) {
     await scheduleNotification(
       "Payment Reminder",
       {
-        body: `You need to pay ₹${userSplit.amount.toFixed(2)} to ${expense.paidBy.name || expense.paidBy.phone} for ${expense.description}`,
-        delay: 60, // 1 hour
-        tag: `expense-pay-${expense.id}`,
+        body: `You need to pay ₹${split.amount.toFixed(2)} to ${expense.paidBy.name || expense.paidBy.phone} for ${expense.description}`,
+        delay: 0.1, // 6 seconds for testing
+        tag: `expense-pay-${expense.id}-${split.id}`,
         data: {
           type: 'expense-payment',
           expenseId: expense.id,
-          amount: userSplit.amount,
+          splitId: split.id,
+          amount: split.amount,
           toUser: expense.paidBy
         }
       }
     );
   }
 
-  if (isReceiver) {
-    // Calculate total amount to receive, excluding self-splits
+  // If user is the creditor, calculate total amount to receive
+  if (isCreditor) {
     const totalToReceive = expense.splits.reduce((sum: number, split: any) => 
-      split.debtor?.id !== currentUser.id ? sum + (split.amount || 0) : sum, 
+      split.debtorId !== currentUser.id ? sum + split.amount : sum,
       0
     );
 
@@ -122,7 +129,7 @@ export async function scheduleExpenseNotification(expense: any) {
         "Payment Collection Reminder",
         {
           body: `You need to collect ₹${totalToReceive.toFixed(2)} for ${expense.description}`,
-          delay: 1440, // 24 hours
+          delay: 0.2, // 12 seconds for testing
           tag: `expense-collect-${expense.id}`,
           data: {
             type: 'expense-collection',
