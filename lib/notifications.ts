@@ -2,17 +2,44 @@ import { toast } from "sonner";
 
 // Check if notifications are supported and permission is granted
 export async function checkNotificationPermission() {
-  if (!("Notification" in window)) {
+  // Check if running in iOS
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  if (isIOS) {
+    toast.error("Notifications are not supported on iOS devices. Please use the app on Android or desktop.");
     return false;
   }
 
+  // Check if notifications are supported
+  if (!("Notification" in window)) {
+    toast.error("Notifications are not supported in this browser");
+    return false;
+  }
+
+  // Check if running as standalone PWA
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+  
   if (Notification.permission === "granted") {
     return true;
   }
 
   if (Notification.permission !== "denied") {
-    const permission = await Notification.requestPermission();
-    return permission === "granted";
+    try {
+      const permission = await Notification.requestPermission();
+      
+      if (permission === "granted") {
+        // Suggest installing PWA if not already installed
+        if (!isStandalone) {
+          toast.info("Install our app for better notification support!", {
+            duration: 5000,
+            description: "Add to Home Screen for reliable notifications"
+          });
+        }
+        return true;
+      }
+    } catch (error) {
+      console.error("Error requesting notification permission:", error);
+      return false;
+    }
   }
 
   return false;
@@ -28,7 +55,6 @@ export async function scheduleNotification(title: string, options: {
   const hasPermission = await checkNotificationPermission();
   
   if (!hasPermission) {
-    toast.error("Please enable notifications to receive reminders");
     return;
   }
 
@@ -46,7 +72,7 @@ export async function scheduleNotification(title: string, options: {
   notifications.push(notification);
   localStorage.setItem('notifications', JSON.stringify(notifications));
 
-  // Schedule the notification immediately for testing
+  // Schedule the notification
   setTimeout(() => {
     new Notification(title, {
       body: options.body,
@@ -54,7 +80,7 @@ export async function scheduleNotification(title: string, options: {
       icon: '/icons/icon-192x192.png',
       badge: '/icons/icon-96x96.png',
       data: options.data,
-      requireInteraction: true // Keep notification visible until user interacts
+      requireInteraction: true, // Keep notification visible until user interacts
     });
 
     // Remove from localStorage after showing
