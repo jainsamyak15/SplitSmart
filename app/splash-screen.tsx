@@ -10,7 +10,7 @@ export function SplashScreen() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setShow(false);
-    }, 2000);
+    }, 3000);
 
     return () => clearTimeout(timer);
   }, []);

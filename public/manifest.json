@@ -2,7 +2,7 @@
   "name": "SplitSmart",
   "short_name": "SplitSmart",
   "description": "Smart expense splitting made beautiful",
-  "start_url": "/",
+  "start_url": "/?standalone=true",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",
@@ -18,10 +18,20 @@
     "preferred_width": 480
   },
   "handle_links": "preferred",
+  "id": "splitsmart-pwa",
+  "dir": "ltr",
+  "lang": "en",
+  "related_applications": [],
+  "protocol_handlers": [
+    {
+      "protocol": "web+splitsmart",
+      "url": "/?standalone=true"
+    }
+  ],
   "shortcuts": [
     {
       "name": "Add Expense",
-      "url": "/dashboard/expenses",
+      "url": "/dashboard/expenses?standalone=true",
       "description": "Add a new expense",
       "icons": [
         {
@@ -34,7 +44,7 @@
     },
     {
       "name": "View Groups",
-      "url": "/dashboard/groups",
+      "url": "/dashboard/groups?standalone=true",
       "description": "View your expense groups",
       "icons": [
         {
