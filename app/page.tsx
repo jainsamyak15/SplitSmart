@@ -21,6 +21,18 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
+    // Check if user is already logged in
+    const user = localStorage.getItem("user");
+    if (user) {
+      // Wait for splash screen to finish (3 seconds) before redirecting
+      const timer = setTimeout(() => {
+        router.push("/dashboard");
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [router]);
+
+  useEffect(() => {
     let timer: NodeJS.Timeout;
     if (otpExpiry) {
       timer = setInterval(() => {
