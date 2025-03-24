@@ -23,6 +23,7 @@ import {
 import { Plus, Loader2 } from "lucide-react";
 import { ExpenseList } from "@/components/expense-list";
 import { SplitMemberSelector } from "@/components/split-member-selector";
+import { ExpenseNotification } from "@/components/expense-notification";
 import { toast } from "sonner";
 
 const categories = [
@@ -60,6 +61,7 @@ export default function ExpensesPage() {
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState("");
+  const [lastCreatedExpense, setLastCreatedExpense] = useState<any>(null);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -70,12 +72,10 @@ export default function ExpensesPage() {
     fetchGroups();
   }, [currentUserId]);
 
-  // Reset selected members when group changes
   useEffect(() => {
     if (selectedGroup) {
       const group = groups.find(g => g.id === selectedGroup);
       if (group) {
-        // Initially select only the current user (who's paying)
         setSelectedMembers([currentUserId]);
       }
     }
@@ -110,11 +110,9 @@ export default function ExpensesPage() {
       setIsLoading(true);
       const user = JSON.parse(localStorage.getItem("user") || "{}");
       
-      // Calculate split amount based on selected members
       const totalAmount = parseFloat(newExpense.amount);
       const splitAmount = totalAmount / selectedMembers.length;
 
-      // Create splits array for selected members
       const splits = selectedMembers.map(memberId => ({
         userId: memberId,
         amount: splitAmount
@@ -138,6 +136,8 @@ export default function ExpensesPage() {
       });
 
       if (response.ok) {
+        const createdExpense = await response.json();
+        setLastCreatedExpense(createdExpense); // Store the created expense
         toast.success("Expense added successfully!");
         setIsOpen(false);
         setNewExpense({ description: "", amount: "", category: "" });
@@ -293,6 +293,11 @@ export default function ExpensesPage() {
           <ExpenseList />
         </Card>
       </motion.div>
+
+      {/* Add ExpenseNotification component */}
+      {lastCreatedExpense && (
+        <ExpenseNotification expense={lastCreatedExpense} />
+      )}
     </div>
   );
 }
