@@ -17,13 +17,14 @@ import { ThemeToggle } from "@/components/theme-toggle";
 export default function Home() {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
-  const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [showSmsNotification, setShowSmsNotification] = useState(false);
   const [mockOtp, setMockOtp] = useState("");
   const [otpExpiry, setOtpExpiry] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [hovering, setHovering] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -159,14 +160,18 @@ export default function Home() {
                 </p>
                 <div
                   className="relative cursor-pointer inline-block"
-                  onMouseEnter={handleCopy}
+                  onMouseEnter={() => setHovering(true)}
+                  onMouseLeave={() => setHovering(false)}
+                  onClick={handleCopy}
                 >
                   <p className="font-mono text-lg font-bold tracking-wider">
                     {mockOtp}
                   </p>
-                  {copied && (
-                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs bg-gray-800 text-white py-1 px-2 rounded">
-                      Copied!
+
+                  {/* Show "Copy" on hover, change to "Copied!" on click */}
+                  {hovering && (
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs bg-gray-800 text-white py-1 px-2 rounded transition-opacity duration-200">
+                      {copied ? "Copied!" : "Copy"}
                     </span>
                   )}
                 </div>
