@@ -13,6 +13,10 @@ export async function POST(req: Request) {
       groupId: z.string(),
       paidById: z.string(),
       date: z.string(),
+      splits: z.array(z.object({
+        userId: z.string(),
+        amount: z.number().positive()
+      }))
     });
 
     const body = await req.json();
@@ -44,18 +48,14 @@ export async function POST(req: Request) {
         },
       });
 
-      // 2. Get number of members in the group
-      const memberCount = expense.group.members.length;
-      const splitAmount = expense.amount / memberCount;
-
-      // 3. Create splits for each member
+      // 2. Create splits for selected members
       const splits = await Promise.all(
-        expense.group.members.map((member) => 
+        data.splits.map((split) => 
           tx.split.create({
             data: {
               expenseId: expense.id,
-              amount: splitAmount,
-              debtorId: member.user.id,
+              amount: split.amount,
+              debtorId: split.userId,
               creditorId: data.paidById,
             }
           })

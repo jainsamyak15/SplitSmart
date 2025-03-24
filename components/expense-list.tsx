@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import {
@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 
 const categoryColors: Record<string, string> = {
@@ -30,6 +30,16 @@ const categoryColors: Record<string, string> = {
 
 interface ExpenseListProps {
   groupId?: string;
+}
+
+interface Split {
+  amount: number;
+  debtor: {
+    id: string;
+    name?: string;
+    phone: string;
+    image?: string;
+  };
 }
 
 interface Expense {
@@ -47,14 +57,7 @@ interface Expense {
   };
   date: string;
   amount: number;
-  splits?: {
-    amount: number;
-    debtor: {
-      id: string;
-      name?: string;
-      phone: string;
-    };
-  }[];
+  splits: Split[];
 }
 
 export function ExpenseList({ groupId }: ExpenseListProps) {
@@ -62,6 +65,7 @@ export function ExpenseList({ groupId }: ExpenseListProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [expandedExpenses, setExpandedExpenses] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -129,6 +133,18 @@ export function ExpenseList({ groupId }: ExpenseListProps) {
     }
   };
 
+  const toggleExpenseDetails = (expenseId: string) => {
+    setExpandedExpenses(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(expenseId)) {
+        newSet.delete(expenseId);
+      } else {
+        newSet.add(expenseId);
+      }
+      return newSet;
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[200px] text-muted-foreground">
@@ -157,17 +173,28 @@ export function ExpenseList({ groupId }: ExpenseListProps) {
             transition={{ delay: index * 0.1 }}
           >
             <Card className="p-4">
-              <div className="flex justify-between items-start mb-3">
-                <div className="space-y-1">
-                  <h3 className="font-medium line-clamp-1">{expense.description}</h3>
-                  <Badge variant="secondary" className={categoryColors[expense.category]}>
-                    {expense.category}
-                  </Badge>
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage
+                      src={
+                        expense.paidBy.image ||
+                        `https://i.pravatar.cc/150?u=${expense.paidBy.id}`
+                      }
+                    />
+                    <AvatarFallback>
+                      {expense.paidBy.name?.[0] || expense.paidBy.phone[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium">{expense.description}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Paid by {expense.paidBy.name || expense.paidBy.phone}
+                    </p>
+                  </div>
                 </div>
                 <div className="flex items-start gap-2">
-                  <p className="font-semibold text-lg">
-                    ₹{expense.amount.toFixed(2)}
-                  </p>
+                  <p className="font-semibold">₹{expense.amount.toFixed(2)}</p>
                   {expense.paidBy.id === currentUserId && (
                     <Button
                       variant="ghost"
@@ -180,36 +207,49 @@ export function ExpenseList({ groupId }: ExpenseListProps) {
                   )}
                 </div>
               </div>
-
-              <div className="flex items-center gap-2 mb-2">
-                <Avatar className="h-6 w-6">
-                  <AvatarImage
-                    src={expense.paidBy.image || `https://i.pravatar.cc/150?u=${expense.paidBy.id}`}
-                  />
-                  <AvatarFallback>
-                    {expense.paidBy.name?.[0] || expense.paidBy.phone[0]}
-                  </AvatarFallback>
-                </Avatar>
+              <div className="flex justify-between items-center mb-2">
+                <Badge variant="secondary" className={categoryColors[expense.category]}>
+                  {expense.category}
+                </Badge>
                 <span className="text-sm text-muted-foreground">
-                  Paid by {expense.paidBy.name || expense.paidBy.phone}
+                  {format(new Date(expense.date), 'MMM d, yyyy')}
                 </span>
               </div>
-
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <span>{expense.group.name}</span>
-                <span>{format(new Date(expense.date), 'MMM d, yyyy')}</span>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">{expense.group.name}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleExpenseDetails(expense.id)}
+                >
+                  {expandedExpenses.has(expense.id) ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
-
-              {expense.splits && expense.splits.length > 0 && (
-                <div className="mt-3 pt-3 border-t">
-                  <p className="text-sm font-medium mb-2">Split with:</p>
-                  <div className="flex flex-wrap gap-2">
+              {expandedExpenses.has(expense.id) && expense.splits && (
+                <div className="mt-4 pt-4 border-t">
+                  <p className="text-sm font-medium mb-2">Split Details:</p>
+                  <div className="space-y-2">
                     {expense.splits.map((split) => (
                       <div
                         key={split.debtor.id}
-                        className="text-xs px-2 py-1 bg-muted rounded-full"
+                        className="flex justify-between items-center text-sm"
                       >
-                        {split.debtor.name || split.debtor.phone}: ₹{split.amount.toFixed(2)}
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage
+                              src={split.debtor.image || `https://i.pravatar.cc/150?u=${split.debtor.id}`}
+                            />
+                            <AvatarFallback>
+                              {split.debtor.name?.[0] || split.debtor.phone[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>{split.debtor.name || split.debtor.phone}</span>
+                        </div>
+                        <span className="font-medium">₹{split.amount.toFixed(2)}</span>
                       </div>
                     ))}
                   </div>
@@ -238,55 +278,109 @@ export function ExpenseList({ groupId }: ExpenseListProps) {
         </TableHeader>
         <TableBody>
           {expenses.map((expense, index) => (
-            <motion.tr
-              key={expense.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="group hover:bg-muted/50"
-            >
-              <TableCell className="font-medium">{expense.description}</TableCell>
-              <TableCell>
-                <Badge
-                  variant="secondary"
-                  className={categoryColors[expense.category]}
-                >
-                  {expense.category}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage
-                      src={expense.paidBy.image || `https://i.pravatar.cc/150?u=${expense.paidBy.id}`}
-                    />
-                    <AvatarFallback>
-                      {expense.paidBy.name?.[0] || expense.paidBy.phone[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  {expense.paidBy.name || expense.paidBy.phone}
-                </div>
-              </TableCell>
-              <TableCell>{expense.group.name}</TableCell>
-              <TableCell>
-                {format(new Date(expense.date), 'MMM d, yyyy')}
-              </TableCell>
-              <TableCell className="text-right font-medium">
-                ₹{expense.amount.toFixed(2)}
-              </TableCell>
-              <TableCell>
-                {expense.paidBy.id === currentUserId && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => handleDeleteExpense(expense.id)}
+            <React.Fragment key={expense.id}>
+              <motion.tr
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="group hover:bg-muted/50"
+              >
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => toggleExpenseDetails(expense.id)}
+                    >
+                      {expandedExpenses.has(expense.id) ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </Button>
+                    {expense.description}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    variant="secondary"
+                    className={categoryColors[expense.category]}
                   >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </TableCell>
-            </motion.tr>
+                    {expense.category}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage
+                        src={
+                          expense.paidBy.image ||
+                          `https://i.pravatar.cc/150?u=${expense.paidBy.id}`
+                        }
+                      />
+                      <AvatarFallback>
+                        {expense.paidBy.name?.[0] || expense.paidBy.phone[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    {expense.paidBy.name || expense.paidBy.phone}
+                  </div>
+                </TableCell>
+                <TableCell>{expense.group.name}</TableCell>
+                <TableCell>
+                  {format(new Date(expense.date), 'MMM d, yyyy')}
+                </TableCell>
+                <TableCell className="text-right">
+                  ₹{expense.amount.toFixed(2)}
+                </TableCell>
+                <TableCell>
+                  {expense.paidBy.id === currentUserId && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleDeleteExpense(expense.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </TableCell>
+              </motion.tr>
+              {expandedExpenses.has(expense.id) && expense.splits && (
+                <motion.tr
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="bg-muted/30"
+                >
+                  <TableCell colSpan={7} className="p-4">
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm mb-2">Split Details:</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        {expense.splits.map((split) => (
+                          <div
+                            key={split.debtor.id}
+                            className="flex justify-between items-center p-2 rounded-lg bg-background"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-6 w-6">
+                                <AvatarImage
+                                  src={split.debtor.image || `https://i.pravatar.cc/150?u=${split.debtor.id}`}
+                                />
+                                <AvatarFallback>
+                                  {split.debtor.name?.[0] || split.debtor.phone[0]}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span>{split.debtor.name || split.debtor.phone}</span>
+                            </div>
+                            <span className="font-medium">₹{split.amount.toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </TableCell>
+                </motion.tr>
+              )}
+            </React.Fragment>
           ))}
         </TableBody>
       </Table>

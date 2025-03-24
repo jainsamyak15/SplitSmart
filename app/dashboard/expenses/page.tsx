@@ -20,8 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { ExpenseList } from "@/components/expense-list";
+import { SplitMemberSelector } from "@/components/split-member-selector";
 import { toast } from "sonner";
 
 const categories = [
@@ -37,6 +38,14 @@ const categories = [
 interface Group {
   id: string;
   name: string;
+  members: {
+    user: {
+      id: string;
+      name: string | null;
+      phone: string;
+      image: string | null;
+    };
+  }[];
 }
 
 export default function ExpensesPage() {
@@ -48,11 +57,29 @@ export default function ExpensesPage() {
   });
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroup, setSelectedGroup] = useState("");
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState("");
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    setCurrentUserId(user.id || "");
+  }, []);
 
   useEffect(() => {
     fetchGroups();
-  }, []);
+  }, [currentUserId]);
+
+  // Reset selected members when group changes
+  useEffect(() => {
+    if (selectedGroup) {
+      const group = groups.find(g => g.id === selectedGroup);
+      if (group) {
+        // Initially select only the current user (who's paying)
+        setSelectedMembers([currentUserId]);
+      }
+    }
+  }, [selectedGroup, groups, currentUserId]);
 
   const fetchGroups = async () => {
     try {
@@ -67,11 +94,7 @@ export default function ExpensesPage() {
       
       if (response.ok) {
         const data = await response.json();
-        // Only show groups where the user is a member
-        const userGroups = data.filter((group: any) => 
-          group.members.some((member: any) => member.user.id === user.id)
-        );
-        setGroups(userGroups);
+        setGroups(data);
       } else {
         const error = await response.json();
         toast.error(error.message || "Failed to fetch groups");
@@ -87,6 +110,16 @@ export default function ExpensesPage() {
       setIsLoading(true);
       const user = JSON.parse(localStorage.getItem("user") || "{}");
       
+      // Calculate split amount based on selected members
+      const totalAmount = parseFloat(newExpense.amount);
+      const splitAmount = totalAmount / selectedMembers.length;
+
+      // Create splits array for selected members
+      const splits = selectedMembers.map(memberId => ({
+        userId: memberId,
+        amount: splitAmount
+      }));
+      
       const response = await fetch("/api/expenses", {
         method: "POST",
         headers: { 
@@ -94,12 +127,13 @@ export default function ExpensesPage() {
           'x-user-id': user.id
         },
         body: JSON.stringify({
-          amount: parseFloat(newExpense.amount),
+          amount: totalAmount,
           description: newExpense.description,
           category: newExpense.category,
           groupId: selectedGroup,
           paidById: user.id,
           date: new Date().toISOString(),
+          splits: splits
         }),
       });
 
@@ -108,6 +142,7 @@ export default function ExpensesPage() {
         setIsOpen(false);
         setNewExpense({ description: "", amount: "", category: "" });
         setSelectedGroup("");
+        setSelectedMembers([]);
       } else {
         const data = await response.json();
         toast.error(data.error || "Failed to add expense");
@@ -119,6 +154,10 @@ export default function ExpensesPage() {
       setIsLoading(false);
     }
   };
+
+  const selectedGroupMembers = selectedGroup
+    ? groups.find(g => g.id === selectedGroup)?.members || []
+    : [];
 
   return (
     <div className="space-y-8">
@@ -201,12 +240,45 @@ export default function ExpensesPage() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {selectedGroup && (
+                <div className="space-y-2">
+                  <Label>Split With</Label>
+                  <SplitMemberSelector
+                    members={selectedGroupMembers}
+                    selectedMembers={selectedMembers}
+                    onMemberSelect={setSelectedMembers}
+                    paidById={currentUserId}
+                  />
+                  {selectedMembers.length > 0 && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Splitting ₹{newExpense.amount || '0'} between {selectedMembers.length} people
+                      (₹{newExpense.amount ? (parseFloat(newExpense.amount) / selectedMembers.length).toFixed(2) : '0'} each)
+                    </p>
+                  )}
+                </div>
+              )}
+
               <Button
                 className="w-full"
                 onClick={handleCreateExpense}
-                disabled={!newExpense.description || !newExpense.amount || !newExpense.category || !selectedGroup || isLoading}
+                disabled={
+                  !newExpense.description ||
+                  !newExpense.amount ||
+                  !newExpense.category ||
+                  !selectedGroup ||
+                  selectedMembers.length === 0 ||
+                  isLoading
+                }
               >
-                {isLoading ? "Adding..." : "Add Expense"}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  "Add Expense"
+                )}
               </Button>
             </div>
           </DialogContent>
