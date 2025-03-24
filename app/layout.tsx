@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { Analytics } from '@vercel/analytics/react';
+import { SplashScreen } from './splash-screen';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -26,6 +27,9 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
+  minimumScale: 1,
+  interactiveWidget: 'resizes-visual',
+  colorScheme: 'light dark',
 };
 
 export default function RootLayout({
@@ -42,7 +46,12 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="SplitSmart" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
+        {/* <meta name="msapplication-config" content="/browserconfig.xml" /> */}
+        <meta name="msapplication-TileColor" content="#000000" />
+        <meta name="msapplication-tap-highlight" content="no" />
+        <meta name="theme-color" content="#000000" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link rel="mask-icon" href="/icons/safari-pinned-tab.svg" color="#000000" />
       </head>
       <body className={inter.className}>
         <ThemeProvider
@@ -51,6 +60,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <SplashScreen />
           {children}
           <Toaster />
         </ThemeProvider>

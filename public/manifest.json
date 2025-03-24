@@ -9,6 +9,43 @@
   "orientation": "portrait",
   "scope": "/",
   "prefer_related_applications": false,
+  "display_override": ["standalone", "fullscreen", "minimal-ui"],
+  "categories": ["finance", "utilities"],
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
+  "edge_side_panel": {
+    "preferred_width": 480
+  },
+  "handle_links": "preferred",
+  "shortcuts": [
+    {
+      "name": "Add Expense",
+      "url": "/dashboard/expenses",
+      "description": "Add a new expense",
+      "icons": [
+        {
+          "src": "/icons/expense-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png",
+          "purpose": "any"
+        }
+      ]
+    },
+    {
+      "name": "View Groups",
+      "url": "/dashboard/groups",
+      "description": "View your expense groups",
+      "icons": [
+        {
+          "src": "/icons/groups-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png",
+          "purpose": "any"
+        }
+      ]
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon-72x72.png",
