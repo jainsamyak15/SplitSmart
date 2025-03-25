@@ -11,22 +11,43 @@ export async function POST(req: Request) {
       fromId: z.string(),
       groupId: z.string(),
       description: z.string().optional(),
+      splitIds: z.array(z.string()).optional(),
     });
 
     const body = await req.json();
     const data = schema.parse(body);
 
-    const settlement = await prisma.settlement.create({
-      data: {
-        amount: data.amount,
-        fromId: data.fromId,
-        groupId: data.groupId,
-        description: data.description,
-      },
-      include: {
-        from: true,
-        group: true,
-      },
+    // Start a transaction to create settlement and update splits
+    const settlement = await prisma.$transaction(async (tx) => {
+      // 1. Create the settlement
+      const settlement = await tx.settlement.create({
+        data: {
+          amount: data.amount,
+          fromId: data.fromId,
+          groupId: data.groupId,
+          description: data.description,
+        },
+        include: {
+          from: true,
+          group: true,
+        },
+      });
+
+      // 2. If splitIds are provided, mark those splits as settled
+      if (data.splitIds?.length) {
+        await tx.split.updateMany({
+          where: {
+            id: {
+              in: data.splitIds
+            }
+          },
+          data: {
+            settled: true
+          }
+        });
+      }
+
+      return settlement;
     });
 
     return NextResponse.json(settlement);
