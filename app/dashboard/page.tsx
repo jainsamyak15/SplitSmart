@@ -62,7 +62,12 @@ export default function DashboardPage() {
         });
 
         // Fetch settlements
-        const settlementsResponse = await fetch("/api/settlements");
+        const settlementsResponse = await fetch("/api/settlements", {
+          headers: {
+            'x-user-id': user.id  // Add the user ID header here
+          }
+        });
+        
         if (settlementsResponse.ok) {
           const settlements = await settlementsResponse.json();
           
@@ -71,7 +76,7 @@ export default function DashboardPage() {
             if (settlement.fromId === user.id) {
               // You paid this settlement
               totalOwing -= settlement.amount;
-            } else if (settlement.toId === user.id) {
+            } else {
               // You received this settlement
               totalOwed -= settlement.amount;
             }
