@@ -35,6 +35,7 @@ export function ReceiptGenerator() {
     const [isLoading, setIsLoading] = useState(true);
     const receiptRef = React.useRef<HTMLDivElement>(null);
     const [currentUserId, setCurrentUserId] = useState<string>("");
+    const [selectedDate, setSelectedDate] = useState(new Date());
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -43,7 +44,7 @@ export function ReceiptGenerator() {
 
     useEffect(() => {
         fetchReceiptData();
-    }, [currentUserId]);
+    }, [currentUserId, selectedDate]);
 
     const fetchReceiptData = async () => {
         try {
@@ -62,26 +63,26 @@ export function ReceiptGenerator() {
             if (!expensesResponse.ok) throw new Error("Failed to fetch expenses");
             const expenses = await expensesResponse.json();
 
-            const today = new Date();
-            const todayExpenses = expenses.filter((expense: any) => {
+            // Filter expenses for the selected date
+            const selectedDateExpenses = expenses.filter((expense: any) => {
                 const expenseDate = new Date(expense.date);
-                return expenseDate.toDateString() === today.toDateString();
+                return expenseDate.toDateString() === selectedDate.toDateString();
             });
 
             const receipt: Receipt = {
-                date: format(today, "MMMM d, yyyy"),
-                totalExpenses: todayExpenses.reduce(
+                date: format(selectedDate, "MMMM d, yyyy"),
+                totalExpenses: selectedDateExpenses.reduce(
                     (sum: number, exp: any) => sum + exp.amount,
                     0
                 ),
-                paidExpenses: todayExpenses
+                paidExpenses: selectedDateExpenses
                     .filter((exp: any) => exp.paidById === user.id)
                     .map((exp: any) => ({
                         description: exp.description,
                         amount: exp.amount,
                         group: exp.group.name,
                     })),
-                pendingPayments: todayExpenses
+                pendingPayments: selectedDateExpenses
                     .filter((exp: any) => exp.paidById !== user.id)
                     .flatMap((exp: any) =>
                         exp.splits
@@ -92,13 +93,13 @@ export function ReceiptGenerator() {
                                 group: exp.group.name,
                             }))
                     ),
-                receivablePayments: todayExpenses
+                receivablePayments: selectedDateExpenses
                     .filter((exp: any) => exp.paidById === user.id)
                     .flatMap((exp: any) =>
                         exp.splits
                             .filter((split: any) => split.debtorId !== user.id && !split.settled)
                             .map((split: any) => ({
-                                from: split.debtor.phone,
+                                from: split.debtor.name || split.debtor.phone,
                                 amount: split.amount,
                                 group: exp.group.name,
                             }))
@@ -149,7 +150,7 @@ export function ReceiptGenerator() {
 
             const imgData = canvas.toDataURL("image/jpeg", 1.0);
             pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, imgHeight);
-            pdf.save(`expense-receipt-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+            pdf.save(`expense-receipt-${format(selectedDate, "yyyy-MM-dd")}.pdf`);
 
             toast.success("Receipt downloaded successfully!");
         } catch (error) {
@@ -192,19 +193,18 @@ export function ReceiptGenerator() {
         );
     }
 
-    if (!receipt) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[400px]">
-                <p className="text-muted-foreground">No expenses found for today</p>
-            </div>
-        );
-    }
-
     return (
         <div className="space-y-6 px-4 md:px-0">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-xl md:text-2xl font-bold">Daily Expense Receipt</h2>
                 <div className="flex w-full sm:w-auto gap-2">
+                    {/* Date selector */}
+                    <input
+                        type="date"
+                        value={format(selectedDate, 'yyyy-MM-dd')}
+                        onChange={(e) => setSelectedDate(new Date(e.target.value))}
+                        className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    />
                     <Button
                         variant="outline"
                         onClick={shareReceipt}
@@ -230,7 +230,7 @@ export function ReceiptGenerator() {
             >
                 <div className="text-center mb-6">
                     <h3 className="text-2xl font-bold">Expense Receipt</h3>
-                    <p className="text-muted-foreground">{receipt.date}</p>
+                    <p className="text-muted-foreground">{receipt?.date}</p>
                 </div>
 
                 <div className="p-6 space-y-6">
@@ -238,7 +238,7 @@ export function ReceiptGenerator() {
                         <h4 className="font-semibold text-lg border-b pb-2 mb-4">
                             Your Expenses
                         </h4>
-                        {receipt.paidExpenses.length > 0 ? (
+                        {receipt?.paidExpenses.length ? (
                             <div className="space-y-3">
                                 {receipt.paidExpenses.map((expense, index) => (
                                     <div
@@ -264,7 +264,7 @@ export function ReceiptGenerator() {
                         <h4 className="font-semibold text-lg border-b pb-2 mb-4">
                             Pending Payments
                         </h4>
-                        {receipt.pendingPayments.length > 0 ? (
+                        {receipt?.pendingPayments.length ? (
                             <div className="space-y-3">
                                 {receipt.pendingPayments.map((payment, index) => (
                                     <div
@@ -292,7 +292,7 @@ export function ReceiptGenerator() {
                         <h4 className="font-semibold text-lg border-b pb-2 mb-4">
                             Receivable Payments
                         </h4>
-                        {receipt.receivablePayments.length > 0 ? (
+                        {receipt?.receivablePayments.length ? (
                             <div className="space-y-3">
                                 {receipt.receivablePayments.map((payment, index) => (
                                     <div
@@ -320,7 +320,7 @@ export function ReceiptGenerator() {
                         <div className="flex justify-between items-center">
                             <p className="text-lg font-semibold">Total Expenses</p>
                             <p className="text-xl font-bold">
-                                ₹{receipt.totalExpenses.toFixed(2)}
+                                ₹{receipt?.totalExpenses.toFixed(2) || "0.00"}
                             </p>
                         </div>
                     </div>
