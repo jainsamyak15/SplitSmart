@@ -101,7 +101,7 @@ export default function GroupsPage() {
           <h1 className="text-3xl font-bold">Groups</h1>
           <p className="text-muted-foreground">Manage your expense groups</p>
         </div>
-
+  
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -145,23 +145,30 @@ export default function GroupsPage() {
           </DialogContent>
         </Dialog>
       </div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-      >
-        {groups.map((group, index) => (
-          <motion.div
-            key={group.id}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.1 }}
-          >
-            <GroupCard group={group} />
-          </motion.div>
-        ))}
-      </motion.div>
+  
+      {groups.length === 0 ? (
+        <div className="flex flex-col items-center justify-center min-h-[200px] text-muted-foreground">
+          <p>No groups found</p>
+          <p className="mt-3">Start by creating your first group!</p>
+        </div>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
+          {groups.map((group, index) => (
+            <motion.div
+              key={group.id}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <GroupCard group={group} />
+            </motion.div>
+          ))}
+        </motion.div>
+      )}
     </div>
-  );
-}
+    );
+  }
