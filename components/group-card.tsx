@@ -106,12 +106,12 @@ export function GroupCard({ group }: GroupCardProps) {
                     <Users className="w-4 h-4 mr-2" />
                     Manage Members
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
+                  {/* <DropdownMenuItem asChild>
                     <Link href={`/dashboard/groups/${group.id}/settings`}>
                       <Settings className="w-4 h-4 mr-2" />
                       Settings
                     </Link>
-                  </DropdownMenuItem>
+                  </DropdownMenuItem> */}
                   <DropdownMenuItem
                     className="text-destructive"
                     onClick={handleDeleteGroup}
