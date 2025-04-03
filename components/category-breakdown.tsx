@@ -78,7 +78,8 @@ export function CategoryBreakdown() {
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="category" />
           <YAxis />
-          <Tooltip />
+          <Tooltip labelClassName="text-black" 
+          itemStyle={{ color: "black" }}/>
           <Bar
             dataKey="amount"
             fill="hsl(var(--primary))"

@@ -83,7 +83,8 @@ export function SettlementChart() {
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="date" />
           <YAxis />
-          <Tooltip 
+          <Tooltip labelClassName="text-black"
+            itemStyle={{ color: "black" }}
             formatter={(value: number) => `₹${value.toFixed(2)}`}
             labelFormatter={(label) => `Date: ${label}`}
           />
