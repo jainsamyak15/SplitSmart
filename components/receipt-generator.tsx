@@ -281,10 +281,10 @@ export function ReceiptGenerator() {
             stampCtx.restore();
             
             // Add PAID text in center
-            stampCtx.font = 'bold 36px Arial';
+            stampCtx.font = 'bold 16px Arial';
             stampCtx.textAlign = 'center';
             stampCtx.textBaseline = 'middle';
-            stampCtx.fillText('PAID', centerX, centerY);
+            stampCtx.fillText('SPLITSMART', centerX, centerY);
             
             // Add decorative dots
             [45, 65, 85, 155, 135, 115].forEach((angle) => {
