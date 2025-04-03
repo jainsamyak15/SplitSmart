@@ -121,38 +121,221 @@ export function ReceiptGenerator() {
         try {
             toast.info("Generating PDF...");
 
-            const originalWidth = receiptRef.current.style.width;
-            const originalMaxWidth = receiptRef.current.style.maxWidth;
+            // Store original styles
+            const receiptElement = receiptRef.current;
+            const originalStyles = {
+                width: receiptElement.style.width,
+                maxWidth: receiptElement.style.maxWidth,
+                height: receiptElement.style.height,
+                overflow: receiptElement.style.overflow,
+                position: receiptElement.style.position
+            };
 
-            receiptRef.current.style.width = "600px";
-            receiptRef.current.style.maxWidth = "600px";
+            // Set fixed width for consistent PDF generation
+            receiptElement.style.width = "600px";
+            receiptElement.style.maxWidth = "600px";
+            receiptElement.style.height = "auto";
+            receiptElement.style.overflow = "visible";
+            receiptElement.style.position = "relative";
 
-            const canvas = await html2canvas(receiptRef.current, {
+            // Create canvas from the receipt element
+            const canvas = await html2canvas(receiptElement, {
                 scale: 2,
                 useCORS: true,
                 logging: false,
                 allowTaint: true,
                 backgroundColor: "#ffffff",
                 windowWidth: 1200,
+                // Force canvas to capture full height
+                height: receiptElement.scrollHeight,
+                onclone: (clonedDoc, clonedElement) => {
+                    clonedElement.style.height = `${receiptElement.scrollHeight}px`;
+                    clonedElement.style.position = "relative";
+                    clonedElement.style.overflow = "visible";
+                },
             });
 
-            receiptRef.current.style.width = originalWidth;
-            receiptRef.current.style.maxWidth = originalMaxWidth;
+            // Restore original styles
+            receiptElement.style.width = originalStyles.width;
+            receiptElement.style.maxWidth = originalStyles.maxWidth;
+            receiptElement.style.height = originalStyles.height;
+            receiptElement.style.overflow = originalStyles.overflow;
+            receiptElement.style.position = originalStyles.position;
 
-            const imgWidth = 210;
+            // Define PDF dimensions with A4 paper size in mind
+            const imgWidth = 210; // A4 width in mm
+            const pageHeight = 297; // A4 height in mm
             const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
+            // Convert canvas to image data URL
+            const imgData = canvas.toDataURL("image/jpeg");
+
+            // Initialize heightLeft and position for pagination
+            let heightLeft = imgHeight;
+            let position = 0;
+            let pageCount = 0;
+            
+            // Create new PDF with proper orientation
             const pdf = new jsPDF({
-                orientation: imgHeight > imgWidth ? "portrait" : "landscape",
+                orientation: "portrait",
                 unit: "mm",
                 format: "a4",
             });
+            
+            // Replace the SVG stamp code with this approach:
+            // Create a temporary canvas to render the stamp
+            const stampCanvas = document.createElement('canvas');
+            stampCanvas.width = 200;
+            stampCanvas.height = 200;
+            const stampCtx = stampCanvas.getContext('2d');
 
-            const imgData = canvas.toDataURL("image/jpeg", 1.0);
-            pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, imgHeight);
+            // Draw the stamp on the canvas
+            if (stampCtx) {
+            // Set background color to transparent
+            stampCtx.clearRect(0, 0, 200, 200);
+
+            // Draw outer serrated edge
+            stampCtx.beginPath();
+            stampCtx.fillStyle = '#cc0000';
+            
+            // Draw a serrated circle
+            const centerX = 100;
+            const centerY = 100;
+            const outerRadius = 90;
+            const pointCount = 24; // Number of points in the serrated edge
+            const innerRadius = 85;
+            
+            for (let i = 0; i < pointCount * 2; i++) {
+                const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                const angle = (Math.PI * 2 * i) / (pointCount * 2);
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+                
+                if (i === 0) {
+                stampCtx.moveTo(x, y);
+                } else {
+                stampCtx.lineTo(x, y);
+                }
+            }
+            
+            stampCtx.closePath();
+            stampCtx.fill();
+            
+            // Draw white circles
+            stampCtx.strokeStyle = '#ffffff';
+            stampCtx.lineWidth = 3;
+            stampCtx.beginPath();
+            stampCtx.arc(centerX, centerY, 70, 0, Math.PI * 2);
+            stampCtx.stroke();
+            
+            stampCtx.lineWidth = 2;
+            stampCtx.beginPath();
+            stampCtx.arc(centerX, centerY, 55, 0, Math.PI * 2);
+            stampCtx.stroke();
+            
+            // Draw curved "THANK YOU" text at top
+            stampCtx.save();
+            stampCtx.font = 'bold 12px Arial';
+            stampCtx.fillStyle = '#ffffff';
+            stampCtx.textAlign = 'center';
+            stampCtx.textBaseline = 'middle';
+            
+            // Draw top curved "THANK YOU"
+            stampCtx.save();
+            const topTextRadius = 62;
+            const topStartAngle = -Math.PI / 3; // -60 degrees
+            const topEndAngle = -2 * Math.PI / 3; // -120 degrees
+            const topTextLength = "THANK YOU".length;
+            
+            for (let i = 0; i < topTextLength; i++) {
+                const charAngle = topStartAngle + (topEndAngle - topStartAngle) * (i / (topTextLength - 1));
+                stampCtx.save();
+                stampCtx.translate(
+                centerX + topTextRadius * Math.cos(charAngle),
+                centerY + topTextRadius * Math.sin(charAngle)
+                );
+                stampCtx.rotate(charAngle + Math.PI / 2); // Adjust for text orientation
+                stampCtx.fillText("UOY KNAHT"[i], 0, 0);
+                stampCtx.restore();
+            }
+            stampCtx.restore();
+            
+            // Draw bottom curved "THANK YOU"
+            stampCtx.save();
+            const bottomTextRadius = 62;
+            const bottomStartAngle = Math.PI / 3.5; // 60 degrees
+            const bottomEndAngle = 2 * Math.PI / 3; // 120 degrees
+            const bottomTextLength = "THANK YOU".length;
+            
+            for (let i = 0; i < bottomTextLength; i++) {
+                const charAngle = bottomStartAngle + (bottomEndAngle - bottomStartAngle) * (i / (bottomTextLength - 1));
+                stampCtx.save();
+                stampCtx.translate(
+                centerX + bottomTextRadius * Math.cos(charAngle),
+                centerY + bottomTextRadius * Math.sin(charAngle)
+                );
+                stampCtx.rotate(charAngle + Math.PI / 2); // Adjust for text orientation
+                stampCtx.fillText("THANK YOU"[i], 0, 0);
+                stampCtx.restore();
+            }
+            stampCtx.restore();
+            
+            // Add PAID text in center
+            stampCtx.font = 'bold 36px Arial';
+            stampCtx.textAlign = 'center';
+            stampCtx.textBaseline = 'middle';
+            stampCtx.fillText('PAID', centerX, centerY);
+            
+            // Add decorative dots
+            [45, 65, 85, 155, 135, 115].forEach((angle) => {
+                const dotRadius = 3;
+                const dotDistance = 80;
+                const dotX = centerX + dotDistance * Math.cos((angle * Math.PI) / 180);
+                const dotY = centerY + dotDistance * Math.sin((angle * Math.PI) / 180);
+                
+                stampCtx.beginPath();
+                stampCtx.arc(dotX, dotY, dotRadius, 0, Math.PI * 2);
+                stampCtx.fill();
+            });
+            
+            stampCtx.restore();
+            }
+
+            // Convert canvas to PNG data URL
+            const stampDataUrl = stampCanvas.toDataURL('image/png');
+
+            // Then use this stampDataUrl in your code where you were using the SVG data URL
+            const addStampToPage = () => {
+            // Position the stamp in the top-right quadrant of the page
+            pdf.addImage(
+                stampDataUrl, 
+                'PNG',  // Change this from 'SVG' to 'PNG'
+                90, // X position (from right side)
+                180,  // Y position (from top)
+                50,  // Width of stamp
+                50   // Height of stamp
+            );
+            };
+            
+            // First page
+            pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+            addStampToPage(); // Add stamp to first page
+            heightLeft -= pageHeight;
+            pageCount++;
+            
+            // Add additional pages if needed
+            while (heightLeft > 0) {
+                position = -(pageCount * pageHeight); // Move to show next portion
+                pdf.addPage();
+                pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+                addStampToPage(); // Add stamp to each additional page
+                heightLeft -= pageHeight;
+                pageCount++;
+            }
+            
             pdf.save(`expense-receipt-${format(selectedDate, "yyyy-MM-dd")}.pdf`);
-
             toast.success("Receipt downloaded successfully!");
+            
         } catch (error) {
             console.error("Failed to download receipt:", error);
             toast.error("Failed to download receipt");
@@ -225,7 +408,7 @@ export function ReceiptGenerator() {
 
             <div
                 ref={receiptRef}
-                className="space-y-6 p-6 bg-background"
+                className="space-y-6 p-6 bg-background relative"
                 style={{ minWidth: "280px" }}
             >
                 <div className="text-center mb-6">
