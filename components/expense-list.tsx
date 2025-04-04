@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import {
@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { ExpenseNotification } from "@/components/expense-notification";
+import { ExpenseUpdateContext } from "../app/dashboard/expenses/page";
 
 const categoryColors: Record<string, string> = {
   FOOD: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
@@ -67,6 +68,9 @@ export function ExpenseList({ groupId }: ExpenseListProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [expandedExpenses, setExpandedExpenses] = useState<Set<string>>(new Set());
+  
+  // Get the context to listen for expense updates
+  const { lastUpdate, triggerUpdate } = useContext(ExpenseUpdateContext);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -82,10 +86,11 @@ export function ExpenseList({ groupId }: ExpenseListProps) {
 
   useEffect(() => {
     fetchExpenses();
-  }, [groupId]);
+  }, [groupId, lastUpdate]); // Re-fetch when lastUpdate changes
 
   const fetchExpenses = async () => {
     try {
+      setIsLoading(true);
       const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
       const url = groupId ? `/api/groups/${groupId}/expenses` : "/api/expenses";
       const response = await fetch(url, {
@@ -123,7 +128,7 @@ export function ExpenseList({ groupId }: ExpenseListProps) {
 
       if (response.ok) {
         toast.success("Expense deleted successfully");
-        fetchExpenses(); // Refresh the list
+        triggerUpdate(); // Trigger an update after deletion
       } else {
         const error = await response.json();
         toast.error(error.error || "Failed to delete expense");
