@@ -31,6 +31,7 @@ interface ManageMembersDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentMembers: GroupMember[];
+  onLoad : () => void;
 }
 
 export function ManageMembersDialog({
@@ -38,15 +39,18 @@ export function ManageMembersDialog({
   open,
   onOpenChange,
   currentMembers,
+  onLoad
 }: ManageMembersDialogProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [loader, setLoader] = useState<boolean>(false)
 
   useEffect(() => {
     if (open) {
       fetchUsers();
+    
     }
   }, [open]);
 
@@ -57,7 +61,13 @@ export function ManageMembersDialog({
         .filter(member => member.role === "MEMBER")
         .map(member => member.user.id)
     );
+  
   }, [currentMembers]);
+
+  useEffect(()=>{
+    onLoad();
+    setLoader(false)
+  }, [loader])
 
   const fetchUsers = async () => {
     setIsLoading(true);
@@ -103,6 +113,7 @@ export function ManageMembersDialog({
       toast.error(error instanceof Error ? error.message : "Failed to update group members");
     } finally {
       setIsSaving(false);
+      setLoader(true)
     }
   };
 

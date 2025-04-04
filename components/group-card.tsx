@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
@@ -40,10 +40,16 @@ interface GroupCardProps {
   group: Group;
 }
 
-export function GroupCard({ group }: GroupCardProps) {
+export function GroupCard({ group , onLoad1} : {group : Group, onLoad1: ()=> void;} ) {
   const [showManageMembers, setShowManageMembers] = useState(false);
+  const [loader, setLoader] = useState<boolean>(false)
   const router = useRouter();
   const totalExpenses = group.expenses.reduce((sum, expense) => sum + expense.amount, 0);
+
+  useEffect(()=> {
+    onLoad1();
+    setLoader(false)
+  }, [loader])
 
   // Get current user from localStorage
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -159,6 +165,9 @@ export function GroupCard({ group }: GroupCardProps) {
 
       {isAdmin && (
         <ManageMembersDialog
+          onLoad={() => {
+            setLoader(true)
+          }}
           groupId={group.id}
           open={showManageMembers}
           onOpenChange={setShowManageMembers}

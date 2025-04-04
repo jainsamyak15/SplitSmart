@@ -23,6 +23,7 @@ export default function GroupsPage() {
   const [newGroup, setNewGroup] = useState({ name: "", description: "" });
   const [isOpen, setIsOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [loader, setLoader] = useState<boolean>(false)
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -32,8 +33,9 @@ export default function GroupsPage() {
   useEffect(() => {
     if (currentUserId) {
       fetchGroups();
+      setLoader(false)
     }
-  }, [currentUserId]);
+  }, [currentUserId , loader]);
 
   const fetchGroups = async () => {
     try {
@@ -164,7 +166,9 @@ export default function GroupsPage() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.1 }}
             >
-              <GroupCard group={group} />
+              <GroupCard onLoad1={() => {
+                setLoader(true);
+              }} group={group} />
             </motion.div>
           ))}
         </motion.div>
