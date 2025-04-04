@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { ExpenseNotification } from "@/components/expense-notification";
-import { ExpenseUpdateContext } from "../app/dashboard/expenses/page";
+import { ExpenseUpdateContext } from "@/context/ExpenseUpdateContext";
 
 const categoryColors: Record<string, string> = {
   FOOD: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",

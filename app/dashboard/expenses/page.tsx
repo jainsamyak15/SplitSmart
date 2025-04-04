@@ -25,12 +25,7 @@ import { ExpenseList } from "@/components/expense-list";
 import { SplitMemberSelector } from "@/components/split-member-selector";
 import { ExpenseNotification } from "@/components/expense-notification";
 import { toast } from "sonner";
-
-// Create a context to manage expense updates
-export const ExpenseUpdateContext = createContext({
-  triggerUpdate: () => {},
-  lastUpdate: 0,
-});
+import { ExpenseUpdateContext } from "@/context/ExpenseUpdateContext";
 
 const categories = [
   { value: "FOOD", label: "Food" },
