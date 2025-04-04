@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,12 @@ import { ExpenseList } from "@/components/expense-list";
 import { SplitMemberSelector } from "@/components/split-member-selector";
 import { ExpenseNotification } from "@/components/expense-notification";
 import { toast } from "sonner";
+
+// Create a context to manage expense updates
+export const ExpenseUpdateContext = createContext({
+  triggerUpdate: () => {},
+  lastUpdate: 0,
+});
 
 const categories = [
   { value: "FOOD", label: "Food" },
@@ -62,6 +68,12 @@ export default function ExpensesPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState("");
   const [lastCreatedExpense, setLastCreatedExpense] = useState<any>(null);
+  const [expenseUpdateCount, setExpenseUpdateCount] = useState(0);
+
+  // Function to trigger expense list refresh
+  const triggerExpenseUpdate = () => {
+    setExpenseUpdateCount(prev => prev + 1);
+  };
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -143,6 +155,9 @@ export default function ExpensesPage() {
         setNewExpense({ description: "", amount: "", category: "" });
         setSelectedGroup("");
         setSelectedMembers([]);
+        
+        // Trigger update to expense list
+        triggerExpenseUpdate();
       } else {
         const data = await response.json();
         toast.error(data.error || "Failed to add expense");
@@ -160,146 +175,151 @@ export default function ExpensesPage() {
     : [];
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Expenses</h1>
-          <p className="text-muted-foreground">Track and manage your expenses</p>
+    <ExpenseUpdateContext.Provider value={{ 
+      triggerUpdate: triggerExpenseUpdate, 
+      lastUpdate: expenseUpdateCount 
+    }}>
+      <div className="space-y-8">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold">Expenses</h1>
+            <p className="text-muted-foreground">Track and manage your expenses</p>
+          </div>
+
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Expense
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Expense</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Input
+                    id="description"
+                    value={newExpense.description}
+                    onChange={(e) =>
+                      setNewExpense({ ...newExpense, description: e.target.value })
+                    }
+                    placeholder="Enter expense description"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Amount</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    value={newExpense.amount}
+                    onChange={(e) =>
+                      setNewExpense({ ...newExpense, amount: e.target.value })
+                    }
+                    placeholder="Enter amount"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category</Label>
+                  <Select
+                    value={newExpense.category}
+                    onValueChange={(value) =>
+                      setNewExpense({ ...newExpense, category: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category.value} value={category.value}>
+                          {category.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="group">Group</Label>
+                  <Select
+                    value={selectedGroup}
+                    onValueChange={setSelectedGroup}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {groups.map((group) => (
+                        <SelectItem key={group.id} value={group.id}>
+                          {group.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {selectedGroup && (
+                  <div className="space-y-2">
+                    <Label>Split With</Label>
+                    <SplitMemberSelector
+                      members={selectedGroupMembers}
+                      selectedMembers={selectedMembers}
+                      onMemberSelect={setSelectedMembers}
+                      paidById={currentUserId}
+                    />
+                    {selectedMembers.length > 0 && (
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Splitting ₹{newExpense.amount || '0'} between {selectedMembers.length} people
+                        (₹{newExpense.amount ? (parseFloat(newExpense.amount) / selectedMembers.length).toFixed(2) : '0'} each)
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <Button
+                  className="w-full"
+                  onClick={handleCreateExpense}
+                  disabled={
+                    !newExpense.description || 
+                    !newExpense.amount || 
+                    !newExpense.category || 
+                    !selectedGroup || 
+                    selectedMembers.length === 0 ||
+                    isLoading
+                  }
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    "Add Expense"
+                  )}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Expense
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Expense</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Input
-                  id="description"
-                  value={newExpense.description}
-                  onChange={(e) =>
-                    setNewExpense({ ...newExpense, description: e.target.value })
-                  }
-                  placeholder="Enter expense description"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="amount">Amount</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  value={newExpense.amount}
-                  onChange={(e) =>
-                    setNewExpense({ ...newExpense, amount: e.target.value })
-                  }
-                  placeholder="Enter amount"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Select
-                  value={newExpense.category}
-                  onValueChange={(value) =>
-                    setNewExpense({ ...newExpense, category: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.value} value={category.value}>
-                        {category.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="group">Group</Label>
-                <Select
-                  value={selectedGroup}
-                  onValueChange={setSelectedGroup}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select group" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {groups.map((group) => (
-                      <SelectItem key={group.id} value={group.id}>
-                        {group.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Card className="p-6">
+            <ExpenseList />
+          </Card>
+        </motion.div>
 
-              {selectedGroup && (
-                <div className="space-y-2">
-                  <Label>Split With</Label>
-                  <SplitMemberSelector
-                    members={selectedGroupMembers}
-                    selectedMembers={selectedMembers}
-                    onMemberSelect={setSelectedMembers}
-                    paidById={currentUserId}
-                  />
-                  {selectedMembers.length > 0 && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Splitting ₹{newExpense.amount || '0'} between {selectedMembers.length} people
-                      (₹{newExpense.amount ? (parseFloat(newExpense.amount) / selectedMembers.length).toFixed(2) : '0'} each)
-                    </p>
-                  )}
-                </div>
-              )}
-
-              <Button
-                className="w-full"
-                onClick={handleCreateExpense}
-                disabled={
-                  !newExpense.description || 
-                  !newExpense.amount || 
-                  !newExpense.category || 
-                  !selectedGroup || 
-                  selectedMembers.length === 0 ||
-                  isLoading
-                }
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Adding...
-                  </>
-                ) : (
-                  "Add Expense"
-                )}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        {lastCreatedExpense && (
+          <ExpenseNotification 
+            expense={lastCreatedExpense} 
+            isNewExpense={true}
+          />
+        )}
       </div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <Card className="p-6">
-          <ExpenseList />
-        </Card>
-      </motion.div>
-
-      {lastCreatedExpense && (
-        <ExpenseNotification 
-          expense={lastCreatedExpense} 
-          isNewExpense={true}
-        />
-      )}
-    </div>
+    </ExpenseUpdateContext.Provider>
   );
 }
