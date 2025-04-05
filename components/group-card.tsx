@@ -83,6 +83,7 @@ export function GroupCard({ group , onLoad1} : {group : Group, onLoad1: ()=> voi
       console.error("Failed to delete group:", error);
       toast.error("Failed to delete group");
     }
+    setLoader(true)
   };
 
   return (

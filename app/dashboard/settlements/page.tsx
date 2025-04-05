@@ -47,6 +47,7 @@ interface PendingSplit {
 }
 
 export default function SettlementsPage() {
+  const [LoadKey , setLoad] = useState<number>(0)
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [groups, setGroups] = useState<{ id: string; name: string }[]>([]);
@@ -78,6 +79,11 @@ export default function SettlementsPage() {
       fetchPendingSplits();
     }
   }, [currentUserId, isOpen]);
+
+  // useEffect(() => {
+  //   alert("trigger")
+  //   setLoader(false)
+  // }, [loader])
 
   const fetchGroups = async () => {
     try {
@@ -179,7 +185,7 @@ export default function SettlementsPage() {
       }
 
       toast.success("Settlement recorded successfully!");
-      setIsOpen(false);
+      setIsLoading(false);
       setNewSettlement({ amount: "", description: "", groupId: "" });
       setSelectedSplits([]);
       fetchPendingSplits();
@@ -187,8 +193,9 @@ export default function SettlementsPage() {
       console.error("Failed to create settlement:", error);
       toast.error(error instanceof Error ? error.message : "Failed to record settlement");
     } finally {
-      setIsLoading(false);
+      setIsOpen(false);
     }
+    setLoad(prev => prev + 1)
   };
 
   const handleExport = async () => {
@@ -405,7 +412,7 @@ export default function SettlementsPage() {
         animate={{ opacity: 1, y: 0 }}
       >
         <Card className="p-4 sm:p-6">
-          <SettlementList />
+          <SettlementList LoadKey={LoadKey} />
         </Card>
       </motion.div>
     </div>
