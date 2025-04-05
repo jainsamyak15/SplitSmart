@@ -31,7 +31,7 @@ interface Settlement {
   };
 }
 
-export function SettlementList() {
+export function SettlementList({LoadKey} : {LoadKey : number}) {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
@@ -53,7 +53,7 @@ export function SettlementList() {
     if (currentUserId) {
       fetchSettlements();
     }
-  }, [currentUserId]);
+  }, [currentUserId , LoadKey]);
 
   const fetchSettlements = async () => {
     try {
